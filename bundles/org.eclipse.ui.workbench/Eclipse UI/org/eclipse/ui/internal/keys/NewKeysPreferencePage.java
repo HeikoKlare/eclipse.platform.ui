@@ -21,6 +21,7 @@
 package org.eclipse.ui.internal.keys;
 
 import static org.eclipse.swt.events.SelectionListener.widgetSelectedAdapter;
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -996,13 +997,10 @@ public class NewKeysPreferencePage extends PreferencePage implements IWorkbenchP
 		gridData.widthHint = Math.max(widthHint, restore.computeSize(SWT.DEFAULT, SWT.DEFAULT, true).x) + 5;
 		restore.setLayoutData(gridData);
 		restore.addSelectionListener(widgetSelectedAdapter(event -> {
-			try {
-				fFilteredTree.setRedraw(false);
+			executeWithRedrawDisabled(fFilteredTree, () -> {
 				BindingModel bindingModel = keyController.getBindingModel();
 				bindingModel.restoreBinding(keyController.getContextModel());
-			} finally {
-				fFilteredTree.setRedraw(true);
-			}
+			});
 		}));
 
 		createButtonBar(treeControls);
@@ -1173,10 +1171,10 @@ public class NewKeysPreferencePage extends PreferencePage implements IWorkbenchP
 				startTime = System.currentTimeMillis();
 			}
 
-			fFilteredTree.setRedraw(false);
-			BusyIndicator.showWhile(fFilteredTree.getViewer().getTree().getDisplay(),
-					() -> keyController.setDefaultBindings(fBindingService));
-			fFilteredTree.setRedraw(true);
+			executeWithRedrawDisabled(fFilteredTree, () -> {
+				BusyIndicator.showWhile(fFilteredTree.getViewer().getTree().getDisplay(),
+						() -> keyController.setDefaultBindings(fBindingService));
+			});
 			if (DEBUG) {
 				final long elapsedTime = System.currentTimeMillis() - startTime;
 				Tracing.printTrace(TRACING_COMPONENT, "performDefaults:model in " + elapsedTime + "ms"); //$NON-NLS-1$ //$NON-NLS-2$

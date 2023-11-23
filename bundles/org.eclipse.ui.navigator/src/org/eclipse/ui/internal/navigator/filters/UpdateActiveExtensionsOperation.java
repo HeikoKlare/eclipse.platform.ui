@@ -14,6 +14,8 @@
 
 package org.eclipse.ui.internal.navigator.filters;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.Arrays;
 
 import org.eclipse.core.commands.operations.AbstractOperation;
@@ -75,17 +77,13 @@ public class UpdateActiveExtensionsOperation extends AbstractOperation {
 	@Override
 	public IStatus execute(IProgressMonitor monitor, IAdaptable info) {
 
-		boolean updateExtensionActivation = false;
-
 		// we sort the array in order to use Array.binarySearch();
 		Arrays.sort(contentExtensionsToActivate);
 
-		IStructuredSelection selection = null;
+		executeWithRedrawDisabled(commonViewer.getControl(), () -> {
+			boolean updateExtensionActivation = false;
 
-		try {
-			commonViewer.getControl().setRedraw(false);
-
-			selection = commonViewer.getStructuredSelection();
+			IStructuredSelection selection = commonViewer.getStructuredSelection();
 
 			INavigatorContentDescriptor[] visibleContentDescriptors = contentService
 					.getVisibleExtensions();
@@ -131,9 +129,7 @@ public class UpdateActiveExtensionsOperation extends AbstractOperation {
 				commonViewer.setSelection(newSelection, true);
 			}
 
-		} finally {
-			commonViewer.getControl().setRedraw(true);
-		}
+		});
 
 		return Status.OK_STATUS;
 	}

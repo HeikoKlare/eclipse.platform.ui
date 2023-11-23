@@ -17,6 +17,8 @@
 
 package org.eclipse.jface.viewers;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -578,12 +580,9 @@ public abstract class AbstractTableViewer extends ColumnViewer {
 
 	@Override
 	protected void inputChanged(Object input, Object oldInput) {
-		getControl().setRedraw(false);
-		try {
+		executeWithRedrawDisabled(getControl(), () -> {
 			preservingSelection(() -> internalRefresh(getRoot()));
-		} finally {
-			getControl().setRedraw(true);
-		}
+		});
 	}
 
 	/**

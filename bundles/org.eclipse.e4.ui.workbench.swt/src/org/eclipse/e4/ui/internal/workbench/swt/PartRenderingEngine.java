@@ -18,6 +18,8 @@
  *******************************************************************************/
 package org.eclipse.e4.ui.internal.workbench.swt;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
@@ -1381,13 +1383,12 @@ public class PartRenderingEngine implements IPresentationEngine {
 			Shell[] shells = display.getShells();
 			for (Shell s : shells) {
 				try {
-					s.setRedraw(false);
-					s.reskin(SWT.ALL);
-					cssEngine.applyStyles(s, true);
+					executeWithRedrawDisabled(s, () -> {
+						s.reskin(SWT.ALL);
+						cssEngine.applyStyles(s, true);
+					});
 				} catch (Exception e) {
 					Activator.log(LogService.LOG_ERROR, e.getMessage(), e);
-				} finally {
-					s.setRedraw(true);
 				}
 			}
 		}

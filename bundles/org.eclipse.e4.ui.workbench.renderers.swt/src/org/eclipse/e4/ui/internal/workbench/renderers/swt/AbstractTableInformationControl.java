@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.e4.ui.internal.workbench.renderers.swt;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import org.eclipse.e4.ui.workbench.swt.internal.copy.SearchPattern;
 import org.eclipse.e4.ui.workbench.swt.internal.copy.WorkbenchSWTMessages;
 import org.eclipse.jface.preference.JFacePreferences;
@@ -387,10 +389,10 @@ public abstract class AbstractTableInformationControl {
 	 */
 	private void stringMatcherUpdated() {
 		// refresh viewer to refilter
-		fTableViewer.getControl().setRedraw(false);
-		fTableViewer.refresh();
-		selectFirstMatch();
-		fTableViewer.getControl().setRedraw(true);
+		executeWithRedrawDisabled(fTableViewer.getControl(), () -> {
+			fTableViewer.refresh();
+			selectFirstMatch();
+		});
 	}
 
 	/**

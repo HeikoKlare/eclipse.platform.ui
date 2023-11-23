@@ -14,6 +14,7 @@
 
 package org.eclipse.jface.text.tests.contentassist;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -132,12 +133,10 @@ public class AbstractContentAssistTest {
 
 	protected void selectAndReveal(int selectionStart, int selectionLength) {
 		StyledText widget= viewer.getTextWidget();
-		widget.setRedraw(false);
-
-		viewer.revealRange(selectionStart, selectionLength);
-		viewer.setSelectedRange(selectionStart, selectionLength);
-
-		widget.setRedraw(true);
+		executeWithRedrawDisabled(widget, () -> {
+			viewer.revealRange(selectionStart, selectionLength);
+			viewer.setSelectedRange(selectionStart, selectionLength);
+		});
 	}
 
 	protected void postSourceViewerKeyEvent(int keyCode, int stateMask, int type) {

@@ -16,6 +16,8 @@
  *******************************************************************************/
 package org.eclipse.jface.action;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.ArrayList;
 
 import org.eclipse.swt.SWT;
@@ -212,9 +214,7 @@ public class ToolBarManager extends ContributionManager implements IToolBarManag
 	protected void relayout(ToolBar layoutBar, int oldCount, int newCount) {
 		if (oldCount != newCount && newCount != 0) {
 			Composite parent = layoutBar.getParent();
-			try {
-				parent.setRedraw(false);
-
+			executeWithRedrawDisabled(parent, () -> {
 				Point beforePack = layoutBar.getSize();
 				layoutBar.pack(true);
 				Point afterPack = layoutBar.getSize();
@@ -241,9 +241,7 @@ public class ToolBarManager extends ContributionManager implements IToolBarManag
 						}
 					}
 				}
-			} finally {
-				parent.setRedraw(true);
-			}
+			});
 		}
 	}
 

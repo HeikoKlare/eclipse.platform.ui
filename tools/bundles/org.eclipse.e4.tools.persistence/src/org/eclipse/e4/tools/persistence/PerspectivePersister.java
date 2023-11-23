@@ -13,6 +13,8 @@
  ******************************************************************************/
 package org.eclipse.e4.tools.persistence;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -132,9 +134,7 @@ public final class PerspectivePersister {
 
 		Shell widget = (Shell) currentWindow.getWidget();
 		// Turn of redrawing while we update the complete layout
-		widget.setRedraw(false);
-
-		try {
+		executeWithRedrawDisabled(widget, () -> {
 			IWorkbenchPage activePage = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
 
 			List<IViewPart> viewPartsToHide = new ArrayList<>();
@@ -241,9 +241,7 @@ public final class PerspectivePersister {
 				s.getTags().remove(IPresentationEngine.MINIMIZED);
 				s.getTags().add(IPresentationEngine.MINIMIZED);
 			});
-		} finally {
-			widget.setRedraw(true);
-		}
+		});
 	}
 
 	private static void disposeCurrentParts(Collection<MPart> parts) {

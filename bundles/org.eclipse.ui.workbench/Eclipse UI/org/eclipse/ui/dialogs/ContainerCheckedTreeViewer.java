@@ -14,6 +14,8 @@
  *******************************************************************************/
 package org.eclipse.ui.dialogs;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -212,8 +214,7 @@ public class ContainerCheckedTreeViewer extends CheckboxTreeViewer {
 		super.setCheckedElements(elements);
 
 		Control tree = getControl();
-		try {
-			tree.setRedraw(false);
+		executeWithRedrawDisabled(tree, () -> {
 			if (oldCheckedElements.length > 0) {
 				// calculate intersection of previously and newly checked elements to avoid
 				// no-op updates
@@ -225,9 +226,7 @@ public class ContainerCheckedTreeViewer extends CheckboxTreeViewer {
 			} else {
 				doCheckStateChanged(elements);
 			}
-		} finally {
-			tree.setRedraw(true);
-		}
+		});
 	}
 
 	@Override

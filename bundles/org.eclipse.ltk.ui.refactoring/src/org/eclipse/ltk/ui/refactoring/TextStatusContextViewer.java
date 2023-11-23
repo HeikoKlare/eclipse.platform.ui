@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.ltk.ui.refactoring;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CLabel;
 import org.eclipse.swt.custom.ViewForm;
@@ -116,11 +118,10 @@ public abstract class TextStatusContextViewer implements IStatusContextViewer {
 	 */
 	protected void setInput(IDocument document, IRegion region) {
 		Control ctrl= getControl();
-		if (ctrl != null && ctrl.isDisposed())
+		if (ctrl != null && ctrl.isDisposed()) {
 			ctrl= null;
-		try {
-			if (ctrl != null)
-				ctrl.setRedraw(false);
+		}
+		Runnable setInputRunnable = () -> {
 			fSourceViewer.setInput(document);
 			if (region != null && document != null) {
 				int offset= region.getOffset();
@@ -130,9 +131,11 @@ public abstract class TextStatusContextViewer implements IStatusContextViewer {
 					fSourceViewer.revealRange(offset, length);
 				}
 			}
-		} finally {
-			if (ctrl != null)
-				ctrl.setRedraw(true);
+		};
+		if (ctrl != null) {
+			executeWithRedrawDisabled(ctrl, setInputRunnable);
+		} else {
+			setInputRunnable.run();
 		}
 	}
 

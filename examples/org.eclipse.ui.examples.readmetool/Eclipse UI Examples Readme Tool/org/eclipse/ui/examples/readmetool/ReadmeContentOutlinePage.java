@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.ui.examples.readmetool;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -129,9 +131,9 @@ public class ReadmeContentOutlinePage extends ContentOutlinePage {
 	 * @see ReadmeEditor#doSave(IProgressMonitor)
 	 */
 	public void update() {
-		getControl().setRedraw(false);
-		getTreeViewer().setInput(getContentOutline(input));
-		getTreeViewer().expandAll();
-		getControl().setRedraw(true);
+		executeWithRedrawDisabled(getControl(), () -> {
+			getTreeViewer().setInput(getContentOutline(input));
+			getTreeViewer().expandAll();
+		});
 	}
 }

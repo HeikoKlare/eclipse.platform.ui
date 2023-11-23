@@ -15,6 +15,8 @@
 
 package org.eclipse.jface.internal.databinding.viewers;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -50,12 +52,9 @@ public class StructuredViewerFiltersProperty<S extends StructuredViewer> extends
 
 	@Override
 	protected void doSetSet(S source, Set<ViewerFilter> set) {
-		source.getControl().setRedraw(false);
-		try {
+		executeWithRedrawDisabled(source.getControl(), () -> {
 			source.setFilters(set.toArray(new ViewerFilter[set.size()]));
-		} finally {
-			source.getControl().setRedraw(true);
-		}
+		});
 	}
 
 	@Override

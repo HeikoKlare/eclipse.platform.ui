@@ -16,6 +16,8 @@
  *******************************************************************************/
 package org.eclipse.ui.navigator;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.PerformanceStats;
 import org.eclipse.core.runtime.SafeRunner;
@@ -186,9 +188,7 @@ public class CommonNavigator extends ViewPart implements ISetSelectionTarget, IS
 		commonViewer = createCommonViewer(aParent);
 		commonViewer.setCommonNavigator(this);
 
-		try {
-			commonViewer.getControl().setRedraw(false);
-
+		executeWithRedrawDisabled(commonViewer.getControl(), () -> {
 			INavigatorFilterService filterService = commonViewer
 					.getNavigatorContentService().getFilterService();
 			ViewerFilter[] visibleFilters = filterService.getVisibleFilters(true);
@@ -207,9 +207,7 @@ public class CommonNavigator extends ViewPart implements ISetSelectionTarget, IS
 			getSite().setSelectionProvider(commonViewer);
 
 			setPartName(getConfigurationElement().getAttribute("name")); //$NON-NLS-1$
-		} finally {
-			commonViewer.getControl().setRedraw(true);
-		}
+		});
 
 		commonViewer.createFrameList();
 

@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.ui.model;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -277,21 +279,18 @@ public class WorkbenchContentProvider extends BaseWorkbenchContentProvider
 				// rename)
 				// Only do this if we're both adding and removing files (the
 				// rename case)
-				if (hasRename) {
-					treeViewer.getControl().setRedraw(false);
-				}
-				try {
+				Runnable addAndRemoveRunnable = () -> {
 					if (addedObjects.length > 0) {
 						treeViewer.add(resource, addedObjects);
 					}
 					if (removedObjects.length > 0) {
 						treeViewer.remove(removedObjects);
 					}
-				}
-				finally {
-					if (hasRename) {
-						treeViewer.getControl().setRedraw(true);
-					}
+				};
+				if (hasRename) {
+					executeWithRedrawDisabled(treeViewer.getControl(), addAndRemoveRunnable);
+				} else {
+					addAndRemoveRunnable.run();
 				}
 			} else {
 				((StructuredViewer) viewer).refresh(resource);

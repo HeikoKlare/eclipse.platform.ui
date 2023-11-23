@@ -15,6 +15,8 @@
 
 package org.eclipse.ui.internal.navigator.resources.actions;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.action.IAction;
@@ -88,12 +90,7 @@ public class WorkingSetRootModeActionGroup extends ActionGroup {
 						WorkingSetsContentProvider.SHOW_TOP_LEVEL_WORKING_SETS,
 						groupWorkingSets);
 
-				structuredViewer.getControl().setRedraw(false);
-				try {
-					structuredViewer.refresh();
-				} finally {
-					structuredViewer.getControl().setRedraw(true);
-				}
+				executeWithRedrawDisabled(structuredViewer.getControl(), () -> structuredViewer.refresh());
 			}
 		}
 	}

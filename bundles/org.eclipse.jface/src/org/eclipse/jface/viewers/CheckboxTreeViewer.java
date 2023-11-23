@@ -15,6 +15,8 @@
  *******************************************************************************/
 package org.eclipse.jface.viewers;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -471,9 +473,7 @@ public class CheckboxTreeViewer extends TreeViewer implements ICheckable {
 			checkedElements.put(element, element);
 		}
 		Control tree = getControl();
-		tree.setRedraw(false);
-		internalSetChecked(checkedElements, tree);
-		tree.setRedraw(true);
+		executeWithRedrawDisabled(tree, () -> internalSetChecked(checkedElements, tree));
 	}
 
 	/**
@@ -537,9 +537,7 @@ public class CheckboxTreeViewer extends TreeViewer implements ICheckable {
 			grayedElements.put(element, element);
 		}
 		Control tree = getControl();
-		tree.setRedraw(false);
-		internalSetGrayed(grayedElements, tree);
-		tree.setRedraw(true);
+		executeWithRedrawDisabled(tree, () -> internalSetGrayed(grayedElements, tree));
 	}
 
 	/**

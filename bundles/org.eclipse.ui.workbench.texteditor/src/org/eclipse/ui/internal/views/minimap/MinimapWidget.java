@@ -15,6 +15,8 @@
  *******************************************************************************/
 package org.eclipse.ui.internal.views.minimap;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -399,31 +401,31 @@ public class MinimapWidget {
 				fEditorBottomIndex = editorBottomIndex;
 				fMaximalLines = maximalLines;
 				// Update the position of minimap styled text
-				fMinimapTextWidget.setRedraw(false);
-				int newMinimapTopIndex = editorTopIndex;
-				if (editorTopIndex != 0
-						&& editorBottomIndex != fMinimapTextWidget.getLineAtOffset(fMinimapTextWidget.getCharCount())) {
-					// center the draw of square of editor client area
-					int minimapTopIndex = JFaceTextUtil.getPartialTopIndex(fMinimapTextWidget);
-					int minimapBottomIndex = JFaceTextUtil.getPartialBottomIndex(fMinimapTextWidget);
-					int minimapVisibleLineCount = minimapBottomIndex - minimapTopIndex;
-					int editorVisibleLineCount = editorBottomIndex - editorTopIndex;
-					newMinimapTopIndex = Math.max(0,
-							editorTopIndex + editorVisibleLineCount - minimapVisibleLineCount / 2);
-				}
-				fMinimapTextWidget.setTopIndex(newMinimapTopIndex);
-				fTopIndexY = fMinimapTextWidget.getLinePixel(fEditorTopIndex);
-				// "fEditorBottomIndex + 1" because fEditorBottomIndex is START
-				// of last line ... we want to include it
-				fBottomIndexY = fMinimapTextWidget.getLinePixel(fEditorBottomIndex + 1);
-				// to avoid that the highlight viewport shrinks to the text
-				// height in case all content is visible in the editor,
-				// calculate a minimal height based on the number of lines
-				// maximal shown and the line height in the minimap
-				fMinimalHeight = maximalLines > fMinimapTextWidget.getLineCount()
-						? maximalLines * fMinimapTextWidget.getLineHeight()
-						: 0;
-				fMinimapTextWidget.setRedraw(true);
+				executeWithRedrawDisabled(fMinimapTextWidget, () -> {
+					int newMinimapTopIndex = editorTopIndex;
+					if (editorTopIndex != 0 && editorBottomIndex != fMinimapTextWidget
+							.getLineAtOffset(fMinimapTextWidget.getCharCount())) {
+						// center the draw of square of editor client area
+						int minimapTopIndex = JFaceTextUtil.getPartialTopIndex(fMinimapTextWidget);
+						int minimapBottomIndex = JFaceTextUtil.getPartialBottomIndex(fMinimapTextWidget);
+						int minimapVisibleLineCount = minimapBottomIndex - minimapTopIndex;
+						int editorVisibleLineCount = editorBottomIndex - editorTopIndex;
+						newMinimapTopIndex = Math.max(0,
+								editorTopIndex + editorVisibleLineCount - minimapVisibleLineCount / 2);
+					}
+					fMinimapTextWidget.setTopIndex(newMinimapTopIndex);
+					fTopIndexY = fMinimapTextWidget.getLinePixel(fEditorTopIndex);
+					// "fEditorBottomIndex + 1" because fEditorBottomIndex is START
+					// of last line ... we want to include it
+					fBottomIndexY = fMinimapTextWidget.getLinePixel(fEditorBottomIndex + 1);
+					// to avoid that the highlight viewport shrinks to the text
+					// height in case all content is visible in the editor,
+					// calculate a minimal height based on the number of lines
+					// maximal shown and the line height in the minimap
+					fMinimalHeight = maximalLines > fMinimapTextWidget.getLineCount()
+							? maximalLines * fMinimapTextWidget.getLineHeight()
+							: 0;
+				});
 			}
 		}
 
@@ -434,10 +436,10 @@ public class MinimapWidget {
 			String text = event.newText;
 			if (event.newLineCount > 0 || event.replaceLineCount > 0) {
 				Rectangle clientArea = fMinimapTextWidget.getClientArea();
-				fMinimapTextWidget.setRedraw(false);
-				fMinimapTextWidget.replaceTextRange(start, length, text);
-				fMinimapTextWidget.redraw(0, fTopIndexY, clientArea.width, clientArea.height, false);
-				fMinimapTextWidget.setRedraw(true);
+				executeWithRedrawDisabled(fMinimapTextWidget, () -> {
+					fMinimapTextWidget.replaceTextRange(start, length, text);
+					fMinimapTextWidget.redraw(0, fTopIndexY, clientArea.width, clientArea.height, false);
+				});
 			} else {
 				fMinimapTextWidget.replaceTextRange(start, length, text);
 			}

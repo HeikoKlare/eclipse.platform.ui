@@ -14,6 +14,8 @@
  *******************************************************************************/
 package org.eclipse.e4.ui.css.swt.engine;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.RegistryFactory;
 import org.eclipse.e4.ui.css.core.impl.engine.RegistryCSSElementProvider;
@@ -68,15 +70,14 @@ public class CSSSWTEngineImpl extends AbstractCSSSWTEngineImpl {
 	public void reapply() {
 		Shell[] shells = display.getShells();
 		for (Shell s : shells) {
-			try {
-				s.setRedraw(false);
-				s.reskin(SWT.ALL);
-				applyStyles(s, true);
-			} catch (Exception e) {
-				ILog.of(getClass()).error(e.getMessage(), e);
-			} finally {
-				s.setRedraw(true);
-			}
+			executeWithRedrawDisabled(s, () -> {
+				try {
+					s.reskin(SWT.ALL);
+					applyStyles(s, true);
+				} catch (Exception e) {
+					ILog.of(getClass()).error(e.getMessage(), e);
+				}
+			});
 		}
 	}
 

@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.ui.views.framelist;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.AbstractTreeViewer;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -61,11 +63,11 @@ public class TreeViewerFrameSource implements IFrameSource {
 	 * @param frame the new value for the current frame
 	 */
 	protected void frameChanged(TreeFrame frame) {
-		viewer.getControl().setRedraw(false);
-		viewer.setInput(frame.getInput());
-		viewer.setExpandedElements(frame.getExpandedElements());
-		viewer.setSelection(frame.getSelection(), true);
-		viewer.getControl().setRedraw(true);
+		executeWithRedrawDisabled(viewer.getControl(), () -> {
+			viewer.setInput(frame.getInput());
+			viewer.setExpandedElements(frame.getExpandedElements());
+			viewer.setSelection(frame.getSelection(), true);
+		});
 	}
 
 	/**

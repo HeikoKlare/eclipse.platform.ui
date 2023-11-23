@@ -22,6 +22,8 @@
 
 package org.eclipse.jface.viewers;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -776,15 +778,12 @@ public abstract class AbstractTreeViewer extends ColumnViewer {
 	public void collapseToLevel(Object elementOrTreePath, int level) {
 		Assert.isNotNull(elementOrTreePath);
 		Control control = getControl();
-		try {
-			control.setRedraw(false);
+		executeWithRedrawDisabled(control, () -> {
 			Widget w = internalGetWidgetToSelect(elementOrTreePath);
 			if (w != null) {
 				internalCollapseToLevel(w, level);
 			}
-		} finally {
-			control.setRedraw(true);
-		}
+		});
 	}
 
 	/**
@@ -1145,18 +1144,17 @@ public abstract class AbstractTreeViewer extends ColumnViewer {
 		if (checkBusy())
 			return;
 		Control control = getControl();
-		try {
-			if (disableRedraw) {
-				control.setRedraw(false);
-			}
+		Runnable expansionRunnable = () -> {
 			Widget w = internalExpand(elementOrTreePath, true);
 			if (w != null) {
 				internalExpandToLevel(w, level);
 			}
-		} finally {
-			if (disableRedraw) {
-				control.setRedraw(true);
-			}
+		};
+
+		if (disableRedraw) {
+			executeWithRedrawDisabled(control, expansionRunnable);
+		} else {
+			expansionRunnable.run();
 		}
 	}
 
@@ -1605,14 +1603,11 @@ public abstract class AbstractTreeViewer extends ColumnViewer {
 	protected void inputChanged(Object input, Object oldInput) {
 		preservingSelection(() -> {
 			Control tree = getControl();
-			tree.setRedraw(false);
-			try {
+			executeWithRedrawDisabled(tree, () -> {
 				removeAll(tree);
 				tree.setData(getRoot());
 				internalInitializeTree(tree);
-			} finally {
-				tree.setRedraw(true);
-			}
+			});
 		});
 	}
 
@@ -2272,10 +2267,10 @@ public abstract class AbstractTreeViewer extends ColumnViewer {
 	protected void labelProviderChanged() {
 		// we have to walk the (visible) tree and update every item
 		Control tree = getControl();
-		tree.setRedraw(false);
-		// don't pick up structure changes, but do force label updates
-		internalRefresh(tree, getRoot(), false, true);
-		tree.setRedraw(true);
+		executeWithRedrawDisabled(tree, () -> {
+			// don't pick up structure changes, but do force label updates
+			internalRefresh(tree, getRoot(), false, true);
+		});
 	}
 
 	/**
@@ -2935,8 +2930,8 @@ public abstract class AbstractTreeViewer extends ColumnViewer {
 		// WORKAROUND
 		if (widget == tree && oldCnt == 0 && getItemCount(tree) != 0) {
 			// System.out.println("WORKAROUND setRedraw");
-			tree.setRedraw(false);
-			tree.setRedraw(true);
+			executeWithRedrawDisabled(tree, () -> { // Do nothing, but just re-enable redraw
+			});
 		}
 	}
 

@@ -14,6 +14,8 @@
  *******************************************************************************/
 package org.eclipse.ui.internal;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import org.eclipse.core.runtime.Adapters;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
@@ -108,13 +110,7 @@ public final class ViewIntroAdapterPart extends ViewPart {
 	public void setStandby(final boolean standby) {
 		final Control control = (Control) ((PartSite) getSite()).getModel().getWidget();
 		BusyIndicator.showWhile(control.getDisplay(), () -> {
-			try {
-				control.setRedraw(false);
-				introPart.standbyStateChanged(standby);
-			} finally {
-				control.setRedraw(true);
-			}
-
+			executeWithRedrawDisabled(control, () -> introPart.standbyStateChanged(standby));
 		});
 	}
 

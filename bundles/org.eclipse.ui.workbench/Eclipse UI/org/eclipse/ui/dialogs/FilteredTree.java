@@ -16,6 +16,8 @@
  *******************************************************************************/
 package org.eclipse.ui.dialogs;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -479,49 +481,49 @@ public class FilteredTree extends Composite {
 				}
 
 				Control redrawFalseControl = treeComposite != null ? treeComposite : treeViewer.getControl();
-				try {
-					// don't want the user to see updates that will be made to
-					// the tree
-					// we are setting redraw(false) on the composite to avoid
-					// dancing scrollbar
-					redrawFalseControl.setRedraw(false);
-					if (!narrowingDown) {
-						// collapse all
-						TreeItem[] is = treeViewer.getTree().getItems();
-						for (TreeItem item : is) {
-							if (item.getExpanded()) {
-								treeViewer.setExpandedState(item.getData(), false);
+				// don't want the user to see updates that will be made to
+				// the tree
+				// we are setting redraw(false) on the composite to avoid
+				// dancing scrollbar
+				return executeWithRedrawDisabled(redrawFalseControl, () -> {
+					try {
+						if (!narrowingDown) {
+							// collapse all
+							TreeItem[] is = treeViewer.getTree().getItems();
+							for (TreeItem item : is) {
+								if (item.getExpanded()) {
+									treeViewer.setExpandedState(item.getData(), false);
+								}
 							}
 						}
-					}
-					treeViewer.refresh(true);
+						treeViewer.refresh(true);
 
-					if (text.length() > 0 && !initial) {
-						/*
-						 * Expand elements one at a time. After each is expanded, check to see if the
-						 * filter text has been modified. If it has, then cancel the refresh job so the
-						 * user doesn't have to endure expansion of all the nodes.
-						 */
-						TreeItem[] items = getViewer().getTree().getItems();
-						int treeHeight = getViewer().getTree().getBounds().height;
-						int numVisibleItems = treeHeight / getViewer().getTree().getItemHeight();
-						long stopTime = SOFT_MAX_EXPAND_TIME + System.currentTimeMillis();
-						if (items.length > 0
-								&& recursiveExpand(items, monitor, stopTime, new int[] { numVisibleItems })) {
-							return Status.CANCEL_STATUS;
+						if (text.length() > 0 && !initial) {
+							/*
+							 * Expand elements one at a time. After each is expanded, check to see if the
+							 * filter text has been modified. If it has, then cancel the refresh job so the
+							 * user doesn't have to endure expansion of all the nodes.
+							 */
+							TreeItem[] items = getViewer().getTree().getItems();
+							int treeHeight = getViewer().getTree().getBounds().height;
+							int numVisibleItems = treeHeight / getViewer().getTree().getItemHeight();
+							long stopTime = SOFT_MAX_EXPAND_TIME + System.currentTimeMillis();
+							if (items.length > 0
+									&& recursiveExpand(items, monitor, stopTime, new int[] { numVisibleItems })) {
+								return Status.CANCEL_STATUS;
+							}
 						}
+					} finally {
+						// done updating the tree - set redraw back to true
+						TreeItem[] items = getViewer().getTree().getItems();
+						if (items.length > 0 && getViewer().getTree().getSelectionCount() == 0) {
+							treeViewer.getTree().setTopItem(items[0]);
+						}
+						if (quickSelectionMode)
+							updateTreeSelection(false);
 					}
-				} finally {
-					// done updating the tree - set redraw back to true
-					TreeItem[] items = getViewer().getTree().getItems();
-					if (items.length > 0 && getViewer().getTree().getSelectionCount() == 0) {
-						treeViewer.getTree().setTopItem(items[0]);
-					}
-					if (quickSelectionMode)
-						updateTreeSelection(false);
-					redrawFalseControl.setRedraw(true);
-				}
-				return Status.OK_STATUS;
+					return Status.OK_STATUS;
+				});
 			}
 
 			/**

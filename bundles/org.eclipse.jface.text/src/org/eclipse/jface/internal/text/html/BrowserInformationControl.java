@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.jface.internal.text.html;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Iterator;
@@ -375,12 +377,8 @@ public class BrowserInformationControl extends AbstractInformationControl implem
 
 	@Override
 	public void setSize(int width, int height) {
-		fBrowser.setRedraw(false); // avoid flickering
-		try {
-			super.setSize(width, height);
-		} finally {
-			fBrowser.setRedraw(true);
-		}
+		// avoid flickering
+		executeWithRedrawDisabled(fBrowser, () -> super.setSize(width, height));
 	}
 
 	/**

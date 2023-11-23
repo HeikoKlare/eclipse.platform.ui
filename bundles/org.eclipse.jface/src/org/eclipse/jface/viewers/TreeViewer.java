@@ -19,6 +19,8 @@
 
 package org.eclipse.jface.viewers;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -1109,8 +1111,7 @@ public class TreeViewer extends AbstractTreeViewer {
 	@Override
 	public void editElement(Object element, int column) {
 		if( element instanceof TreePath ) {
-			try {
-				getControl().setRedraw(false);
+			executeWithRedrawDisabled(getControl(), () -> {
 				setSelection(new TreeSelection((TreePath) element));
 				TreeItem[] items = tree.getSelection();
 
@@ -1124,9 +1125,7 @@ public class TreeViewer extends AbstractTreeViewer {
 						}
 					}
 				}
-			} finally {
-				getControl().setRedraw(true);
-			}
+			});
 		} else {
 			super.editElement(element, column);
 		}

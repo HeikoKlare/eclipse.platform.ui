@@ -14,6 +14,8 @@
 package org.eclipse.ui.examples.javaeditor;
 
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -230,10 +232,10 @@ public class JavaContentOutlinePage extends ContentOutlinePage {
 		if (viewer != null) {
 			Control control= viewer.getControl();
 			if (control != null && !control.isDisposed()) {
-				control.setRedraw(false);
-				viewer.setInput(fInput);
-				viewer.expandAll();
-				control.setRedraw(true);
+				executeWithRedrawDisabled(control, () -> {
+					viewer.setInput(fInput);
+					viewer.expandAll();
+				});
 			}
 		}
 	}

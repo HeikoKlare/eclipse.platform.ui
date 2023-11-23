@@ -16,6 +16,8 @@
  *******************************************************************************/
 package org.eclipse.e4.ui.workbench.renderers.swt;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import jakarta.inject.Inject;
 import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.core.di.annotations.Optional;
@@ -281,12 +283,7 @@ public class ContributedPartRenderer extends SWTPartRenderer {
 		}
 
 		if (parent != null) {
-			try {
-				parent.setRedraw(false);
-				super.disposeWidget(element);
-			} finally {
-				parent.setRedraw(true);
-			}
+			executeWithRedrawDisabled(parent, () -> super.disposeWidget(element));
 		} else {
 			super.disposeWidget(element);
 		}

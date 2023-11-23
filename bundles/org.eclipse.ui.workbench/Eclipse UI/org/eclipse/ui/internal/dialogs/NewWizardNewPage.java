@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.ui.internal.dialogs;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -378,17 +380,7 @@ class NewWizardNewPage implements ISelectionChangedListener {
 				public void widgetSelected(SelectionEvent e) {
 					boolean showAll = showAllCheck.getSelection();
 
-					if (showAll) {
-						filteredTree.getViewer().getControl().setRedraw(false);
-					} else {
-						// get the inital expanded elements when going from show
-						// all-> no show all.
-						// this isnt really the delta yet, we're just reusing
-						// the variable.
-						delta = filteredTree.getViewer().getExpandedElements();
-					}
-
-					try {
+					Runnable refreshRunnable = () -> {
 						if (showAll) {
 							filteredTree.getViewer().resetFilters();
 							filteredTree.getViewer().addFilter(filteredTreeFilter);
@@ -405,6 +397,11 @@ class NewWizardNewPage implements ISelectionChangedListener {
 							System.arraycopy(delta, 0, expanded, currentExpanded.length, delta.length);
 							filteredTree.getViewer().setExpandedElements(expanded);
 						} else {
+							// get the inital expanded elements when going from show
+							// all-> no show all.
+							// this isnt really the delta yet, we're just reusing
+							// the variable.
+							delta = filteredTree.getViewer().getExpandedElements();
 							filteredTree.getViewer().addFilter(filter);
 							if (projectsOnly) {
 								filteredTree.getViewer().addFilter(projectFilter);
@@ -421,10 +418,12 @@ class NewWizardNewPage implements ISelectionChangedListener {
 							List<Object> deltaList = new ArrayList<>(Arrays.asList(delta));
 							deltaList.removeAll(Arrays.asList(newExpanded));
 						}
-					} finally {
-						if (showAll) {
-							filteredTree.getViewer().getControl().setRedraw(true);
-						}
+					};
+
+					if(showAll) {
+						executeWithRedrawDisabled(filteredTree.getViewer().getControl(), refreshRunnable);
+					} else {
+						refreshRunnable.run();
 					}
 				}
 			});

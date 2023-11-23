@@ -16,6 +16,8 @@
  *******************************************************************************/
 package org.eclipse.e4.ui.css.swt.properties.css2;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import org.eclipse.e4.ui.css.core.dom.properties.ICSSPropertyHandler2;
 import org.eclipse.e4.ui.css.core.dom.properties.css2.AbstractCSSPropertyFontHandler;
 import org.eclipse.e4.ui.css.core.dom.properties.css2.CSS2FontProperties;
@@ -63,14 +65,9 @@ implements ICSSPropertyHandler2 {
 			Control control = (Control)widget;
 			final boolean isLayoutDeferred = (control instanceof Composite) && ((Composite)control).isLayoutDeferred();
 			if (isLayoutDeferred) {
-				control.setRedraw(false);
-			}
-			try {
+				executeWithRedrawDisabled(control, () -> CSSSWTFontHelper.setFont(control, font));
+			} else {
 				CSSSWTFontHelper.setFont(control, font);
-			} finally {
-				if (isLayoutDeferred) {
-					control.setRedraw(true);
-				}
 			}
 		}
 	}

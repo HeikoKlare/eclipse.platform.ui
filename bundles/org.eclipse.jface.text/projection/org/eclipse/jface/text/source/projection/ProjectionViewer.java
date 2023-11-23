@@ -16,6 +16,8 @@
  *******************************************************************************/
 package org.eclipse.jface.text.source.projection;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -746,10 +748,7 @@ public class ProjectionViewer extends SourceViewer implements ITextViewerExtensi
 
 	private void executeReplaceVisibleDocument(IDocument visibleDocument) {
 		StyledText textWidget= getTextWidget();
-		try {
-			if (textWidget != null && !textWidget.isDisposed())
-				textWidget.setRedraw(false);
-
+		Runnable replacementRunnable= () -> {
 			int topIndex= getTopIndex();
 			Point selection= getSelectedRange();
 			setVisibleDocument(visibleDocument);
@@ -757,10 +756,12 @@ public class ProjectionViewer extends SourceViewer implements ITextViewerExtensi
 			if (currentSelection.x != selection.x || currentSelection.y != selection.y)
 				setSelectedRange(selection.x, selection.y);
 			setTopIndex(topIndex);
+		};
 
-		} finally {
-			if (textWidget != null && !textWidget.isDisposed())
-				textWidget.setRedraw(true);
+		if (textWidget != null && !textWidget.isDisposed()) {
+			executeWithRedrawDisabled(textWidget, replacementRunnable);
+		} else {
+			replacementRunnable.run();
 		}
 	}
 

@@ -15,6 +15,8 @@
 
 package org.eclipse.ui.texteditor;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.Stack;
 
 import org.eclipse.swt.SWT;
@@ -519,42 +521,43 @@ class IncrementalFindTarget implements IFindReplaceTarget, IFindReplaceTargetExt
 		StyledText text= fTextViewer.getTextWidget();
 		// Cannot use fTarget.getSelection since that does not return which side of the
 		// selection the caret is on.
-		int startIndex= text.getCaretOffset();
+		int potentialStartIndex= text.getCaretOffset();
 		if (!forward)
-			startIndex -= 1;
+			potentialStartIndex -= 1;
 
 		// Check to see if a wrap is necessary
 		if (!fFound && (fForward == forward)) {
-			startIndex= -1;
+			potentialStartIndex= -1;
 			if (fWrapPosition == -1)
 				fWrapPosition= fSessionStack.size();
 		}
 		fForward = forward;
 
 		// Find the string
-		text.setRedraw(false);
-		int index= fTarget.findAndSelect(startIndex, string, fForward, fCasePosition != -1, false);
-
-		// Set the caret on the left if the search is reversed
-		if (!forward) {
-			Point p= fTarget.getSelection();
-			text.setSelectionRange(p.x + p.y, -p.y);
-			p= null;
-		}
-		text.setRedraw(true);
+		int startIndex = potentialStartIndex;
+		boolean found = executeWithRedrawDisabled(text, () -> {
+			int index = fTarget.findAndSelect(startIndex, string, fForward, fCasePosition != -1, false);
+			// Set the caret on the left if the search is reversed
+			if (!forward) {
+				Point p = fTarget.getSelection();
+				text.setSelectionRange(p.x + p.y, -p.y);
+				p = null;
+			}
+			return Boolean.valueOf(index != -1);
+		}).booleanValue();
 
 		// Take appropriate action
-		boolean found = (index != -1);
 		if (!found && fFound) {
-			text= fTextViewer.getTextWidget();
-			if (text != null && !text.isDisposed())
-				text.getDisplay().beep();
+			StyledText newText = fTextViewer.getTextWidget();
+			if (newText != null && !newText.isDisposed())
+				newText.getDisplay().beep();
 		}
 
-		if (found)
-			fCurrentIndex= startIndex;
+		if (found) {
+			fCurrentIndex = startIndex;
+		}
 
-		fFound= found;
+		fFound = found;
 		return found;
 	}
 
@@ -574,26 +577,27 @@ class IncrementalFindTarget implements IFindReplaceTarget, IFindReplaceTargetExt
 		String string= fFindString.toString();
 		StyledText text= fTextViewer.getTextWidget();
 
-		text.setRedraw(false);
-		int index= fTarget.findAndSelect(fCurrentIndex, string, fForward, fCasePosition != -1, false);
+		boolean[] found = new boolean[1];
+		executeWithRedrawDisabled(text, () -> {
+			int index = fTarget.findAndSelect(fCurrentIndex, string, fForward, fCasePosition != -1, false);
+			found[0] = index != -1;
 
-		// Set the caret on the left if the search is reversed
-		if (!fForward) {
-			Point p= fTarget.getSelection();
-			text.setSelectionRange(p.x + p.y, -p.y);
-		}
-		text.setRedraw(true);
+			// Set the caret on the left if the search is reversed
+			if (!fForward) {
+				Point p = fTarget.getSelection();
+				text.setSelectionRange(p.x + p.y, -p.y);
+			}
+		});
 
 		// Take appropriate action
-		boolean found = (index != -1);
-		if (!found && fFound) {
-			text= fTextViewer.getTextWidget();
-			if (text != null && !text.isDisposed())
-				text.getDisplay().beep();
+		if (!found[0] && fFound) {
+			StyledText newText = fTextViewer.getTextWidget();
+			if (newText != null && !newText.isDisposed())
+				newText.getDisplay().beep();
 		}
 
-		fFound= found;
-		return found;
+		fFound = found[0];
+		return found[0];
 	}
 
 	/**

@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.ui.internal.navigator.extensions;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -216,11 +218,9 @@ public class StructuredViewerManager {
 			SafeRunner.run(new NavigatorSafeRunnable() {
 				@Override
 				public void run() throws Exception {
-					localViewer.getControl().setRedraw(false);
-					localViewer.refresh();
+					executeWithRedrawDisabled(localViewer.getControl(), () -> localViewer.refresh());
 				}
 			});
-			localViewer.getControl().setRedraw(true);
 		});
 
 	}

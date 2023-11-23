@@ -17,6 +17,8 @@
  *******************************************************************************/
 package org.eclipse.jface.text;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -4712,20 +4714,17 @@ public class TextViewer extends Viewer implements
 	public void setTextColor(Color color, int start, int length, boolean controlRedraw) {
 		if (fTextWidget != null) {
 
-			StyleRange s= new StyleRange();
-			s.foreground= color;
-			s.start= start;
-			s.length= length;
+			StyleRange modelStyleRange= new StyleRange();
+			modelStyleRange.foreground= color;
+			modelStyleRange.start= start;
+			modelStyleRange.length= length;
 
-			s= modelStyleRange2WidgetStyleRange(s);
-			if (s != null) {
-				if (controlRedraw)
-					fTextWidget.setRedraw(false);
-				try {
-					fTextWidget.setStyleRange(s);
-				} finally {
-					if (controlRedraw)
-						fTextWidget.setRedraw(true);
+			StyleRange widgetStyleRange= modelStyleRange2WidgetStyleRange(modelStyleRange);
+			if (widgetStyleRange != null) {
+				if (controlRedraw) {
+					executeWithRedrawDisabled(fTextWidget, () -> fTextWidget.setStyleRange(widgetStyleRange));
+				} else {
+					fTextWidget.setStyleRange(widgetStyleRange);
 				}
 			}
 		}
@@ -4845,16 +4844,19 @@ public class TextViewer extends Viewer implements
 		if (presentation.isEmpty())
 			return;
 
-		if (controlRedraw)
-			fTextWidget.setRedraw(false);
+		Runnable changePresentationRunnable= () -> {
+			if (fReplaceTextPresentation) {
+				applyTextPresentation(presentation);
+			} else {
+				addPresentation(presentation);
+			}
+		};
 
-		if (fReplaceTextPresentation)
-			applyTextPresentation(presentation);
-		else
-			addPresentation(presentation);
-
-		if (controlRedraw)
-			fTextWidget.setRedraw(true);
+		if (controlRedraw) {
+			executeWithRedrawDisabled(fTextWidget, changePresentationRunnable);
+		} else {
+			changePresentationRunnable.run();
+		}
 	}
 
 	@Override

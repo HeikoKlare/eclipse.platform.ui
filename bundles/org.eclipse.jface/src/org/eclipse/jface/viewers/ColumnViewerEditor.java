@@ -18,6 +18,8 @@
 
 package org.eclipse.jface.viewers;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeListener;
@@ -518,16 +520,16 @@ public abstract class ColumnViewerEditor {
 	protected void processTraverseEvent(int columnIndex, ViewerRow row,
 			TraverseEvent event) {
 
-		ViewerCell cell2edit = null;
+		ViewerCell potentialCell2edit = null;
 
 		if (event.detail == SWT.TRAVERSE_TAB_PREVIOUS) {
 			event.doit = false;
 
 			if ((event.stateMask & SWT.CTRL) == SWT.CTRL
 					&& (feature & TABBING_VERTICAL) == TABBING_VERTICAL) {
-				cell2edit = searchCellAboveBelow(row, viewer, columnIndex, true);
+				potentialCell2edit = searchCellAboveBelow(row, viewer, columnIndex, true);
 			} else if ((feature & TABBING_HORIZONTAL) == TABBING_HORIZONTAL) {
-				cell2edit = searchPreviousCell(row, row.getCell(columnIndex),
+				potentialCell2edit = searchPreviousCell(row, row.getCell(columnIndex),
 						row.getCell(columnIndex), viewer);
 			}
 		} else if (event.detail == SWT.TRAVERSE_TAB_NEXT) {
@@ -535,21 +537,20 @@ public abstract class ColumnViewerEditor {
 
 			if ((event.stateMask & SWT.CTRL) == SWT.CTRL
 					&& (feature & TABBING_VERTICAL) == TABBING_VERTICAL) {
-				cell2edit = searchCellAboveBelow(row, viewer, columnIndex,
+				potentialCell2edit = searchCellAboveBelow(row, viewer, columnIndex,
 						false);
 			} else if ((feature & TABBING_HORIZONTAL) == TABBING_HORIZONTAL) {
-				cell2edit = searchNextCell(row, row.getCell(columnIndex), row
+				potentialCell2edit = searchNextCell(row, row.getCell(columnIndex), row
 						.getCell(columnIndex), viewer);
 			}
 		}
+		ViewerCell cell2edit = potentialCell2edit;
 
 		if (cell2edit != null) {
-
-			viewer.getControl().setRedraw(false);
-			ColumnViewerEditorActivationEvent acEvent = new ColumnViewerEditorActivationEvent(
-					cell2edit, event);
-			viewer.triggerEditorActivationEvent(acEvent);
-			viewer.getControl().setRedraw(true);
+			executeWithRedrawDisabled(viewer.getControl(), () -> {
+				ColumnViewerEditorActivationEvent acEvent = new ColumnViewerEditorActivationEvent(cell2edit, event);
+				viewer.triggerEditorActivationEvent(acEvent);
+			});
 		}
 	}
 

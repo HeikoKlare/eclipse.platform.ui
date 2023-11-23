@@ -17,6 +17,8 @@
 
 package org.eclipse.jface.viewers;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -411,8 +413,7 @@ public abstract class ColumnViewer extends StructuredViewer {
 	 */
 	public void editElement(Object element, int column) {
 		if (viewerEditor != null) {
-			try {
-				getControl().setRedraw(false);
+			executeWithRedrawDisabled(getControl(), () -> {
 				// Set the selection at first because in Tree's
 				// the element might not be materialized
 				setSelection(new StructuredSelection(element), true);
@@ -428,9 +429,7 @@ public abstract class ColumnViewer extends StructuredViewer {
 						}
 					}
 				}
-			} finally {
-				getControl().setRedraw(true);
-			}
+			});
 		}
 	}
 

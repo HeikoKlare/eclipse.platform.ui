@@ -17,6 +17,8 @@
 
 package org.eclipse.jface.databinding.viewers;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.Set;
 
 import org.eclipse.core.databinding.observable.IObservableCollection;
@@ -118,33 +120,31 @@ public class ObservableListContentProvider<E> implements IStructuredContentProvi
 				realizedElements.removeAll(knownElementRemovals);
 			}
 
-			if (suspendRedraw[0])
-				viewer.getControl().setRedraw(false);
-			try {
-				event.diff.accept(new ListDiffVisitor<E>() {
-					@Override
-					public void handleAdd(int index, E element) {
-						viewerUpdater.insert(element, index);
-					}
+			ListDiffVisitor<E> diffVisitor = new ListDiffVisitor<E>() {
+				@Override
+				public void handleAdd(int index, E element) {
+					viewerUpdater.insert(element, index);
+				}
 
-					@Override
-					public void handleRemove(int index, E element) {
-						viewerUpdater.remove(element, index);
-					}
+				@Override
+				public void handleRemove(int index, E element) {
+					viewerUpdater.remove(element, index);
+				}
 
-					@Override
-					public void handleReplace(int index, E oldElement, E newElement) {
-						viewerUpdater.replace(oldElement, newElement, index);
-					}
+				@Override
+				public void handleReplace(int index, E oldElement, E newElement) {
+					viewerUpdater.replace(oldElement, newElement, index);
+				}
 
-					@Override
-					public void handleMove(int oldIndex, int newIndex, E element) {
-						viewerUpdater.move(element, oldIndex, newIndex);
-					}
-				});
-			} finally {
-				if (suspendRedraw[0])
-					viewer.getControl().setRedraw(true);
+				@Override
+				public void handleMove(int oldIndex, int newIndex, E element) {
+					viewerUpdater.move(element, oldIndex, newIndex);
+				}
+			};
+			if (suspendRedraw[0]) {
+				executeWithRedrawDisabled(viewer.getControl(), () -> event.diff.accept(diffVisitor));
+			} else {
+				event.diff.accept(diffVisitor);
 			}
 
 			if (realizedElements != null) {

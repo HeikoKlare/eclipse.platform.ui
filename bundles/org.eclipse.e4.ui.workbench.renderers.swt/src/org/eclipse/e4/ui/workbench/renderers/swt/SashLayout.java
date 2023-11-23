@@ -14,6 +14,8 @@
  *******************************************************************************/
 package org.eclipse.e4.ui.workbench.renderers.swt;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.core.runtime.Platform;
@@ -140,12 +142,7 @@ public class SashLayout extends Layout {
 				// see https://bugs.eclipse.org/bugs/show_bug.cgi?id=558392
 				// once this is fixed, the requestLayout call should be sufficient
 				if (Platform.getOS().equals(Platform.OS_WIN32)) {
-					try {
-						host.setRedraw(false);
-						host.layout();
-					} finally {
-						host.setRedraw(true);
-					}
+					executeWithRedrawDisabled(host, () -> host.layout());
 					host.update();
 				} else {
 					host.requestLayout();

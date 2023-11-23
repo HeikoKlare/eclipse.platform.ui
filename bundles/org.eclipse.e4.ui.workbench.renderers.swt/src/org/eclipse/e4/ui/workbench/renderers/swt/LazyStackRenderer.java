@@ -19,6 +19,7 @@
 package org.eclipse.e4.ui.workbench.renderers.swt;
 
 import static org.eclipse.core.runtime.Assert.isNotNull;
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
 
 import jakarta.inject.Inject;
 import java.util.ArrayList;
@@ -73,8 +74,7 @@ public abstract class LazyStackRenderer extends SWTPartRenderer {
 		LazyStackRenderer lsr = (LazyStackRenderer) stack.getRenderer();
 
 		Control widget = (Control) stack.getWidget();
-		widget.setRedraw(false);
-		try {
+		executeWithRedrawDisabled(widget, () -> {
 			// Gather up the elements that are being 'hidden' by this change
 			MUIElement oldSel = (MUIElement) event.getProperty(UIEvents.EventTags.OLD_VALUE);
 			if (oldSel != null) {
@@ -84,9 +84,7 @@ public abstract class LazyStackRenderer extends SWTPartRenderer {
 			if (stack.getSelectedElement() != null) {
 				lsr.showTab(stack.getSelectedElement());
 			}
-		} finally {
-			widget.setRedraw(true);
-		}
+		});
 	};
 
 	public void init(IEventBroker eventBroker) {

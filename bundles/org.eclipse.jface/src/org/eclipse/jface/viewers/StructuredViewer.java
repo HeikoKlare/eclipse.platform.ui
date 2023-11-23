@@ -19,6 +19,7 @@
 package org.eclipse.jface.viewers;
 
 import static org.eclipse.swt.events.SelectionListener.widgetSelectedAdapter;
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1416,14 +1417,9 @@ public abstract class StructuredViewer extends ContentViewer implements IPostSel
 	public void refresh() {
 		Control control = getControl();
 		if (control != null) {
-			control.setRedraw(false);
-		}
-		try {
+			executeWithRedrawDisabled(control, () -> refresh(getRoot()));
+		} else {
 			refresh(getRoot());
-		} finally {
-			if (control != null) {
-				control.setRedraw(true);
-			}
 		}
 	}
 

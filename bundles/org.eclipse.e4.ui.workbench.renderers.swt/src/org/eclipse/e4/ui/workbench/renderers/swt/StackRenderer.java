@@ -19,6 +19,7 @@
 package org.eclipse.e4.ui.workbench.renderers.swt;
 
 import static java.util.Collections.singletonList;
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -897,13 +898,10 @@ public class StackRenderer extends LazyStackRenderer {
 		}
 
 		// Pack the result
-		try {
-			trComp.setRedraw(false);
+		executeWithRedrawDisabled(trComp, () -> {
 			trComp.pack();
 			trComp.requestLayout();
-		} finally {
-			trComp.setRedraw(true);
-		}
+		});
 
 		updateMRUValue(tabFolder);
 	}

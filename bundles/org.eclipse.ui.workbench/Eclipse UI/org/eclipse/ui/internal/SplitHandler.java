@@ -14,6 +14,8 @@
  ******************************************************************************/
 package org.eclipse.ui.internal;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.List;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -59,8 +61,7 @@ public class SplitHandler extends AbstractHandler {
 		if (stack == null)
 			return null;
 
-		window.getShell().setRedraw(false);
-		try {
+		executeWithRedrawDisabled(window.getShell(), () -> {
 			// Determine which part has the tags
 			MStackElement stackSelElement = stack.getSelectedElement();
 			MPart taggedEditor = editorPart;
@@ -82,9 +83,7 @@ public class SplitHandler extends AbstractHandler {
 				editorPart.getTags().remove(IPresentationEngine.SPLIT_VERTICAL);
 				editorPart.getTags().add(IPresentationEngine.SPLIT_HORIZONTAL);
 			}
-		} finally {
-			window.getShell().setRedraw(true);
-		}
+		});
 
 		return null;
 	}

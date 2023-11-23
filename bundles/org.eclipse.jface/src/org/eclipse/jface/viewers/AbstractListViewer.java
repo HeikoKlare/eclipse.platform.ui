@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.ControlUtil;
 import org.eclipse.swt.widgets.Widget;
 
 /**
@@ -349,12 +350,10 @@ public abstract class AbstractListViewer extends StructuredViewer {
 				topIndex = listGetTopIndex();
 			}
 
-			Object[] children = null;
-			list.setRedraw(false);
-			try {
+			Object[] children = getSortedChildren(getRoot());
+			ControlUtil.executeWithRedrawDisabled(list, () -> {
 				listRemoveAll();
 
-				children = getSortedChildren(getRoot());
 				String[] items = new String[children.length];
 
 				ILabelProvider labelProvider = (ILabelProvider) getLabelProvider();
@@ -367,9 +366,7 @@ public abstract class AbstractListViewer extends StructuredViewer {
 				}
 
 				listSetItems(items);
-			} finally {
-				list.setRedraw(true);
-			}
+			});
 
 			if (topIndex == -1) {
 				setSelectionToWidget(selection, false);

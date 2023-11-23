@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.jface.action;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -767,11 +769,9 @@ public class CoolBarManager extends ContributionManager implements ICoolBarManag
 			return;
 		}
 
-		boolean relock = false;
-		boolean changed = false;
-
-		try {
-			coolBar.setRedraw(false);
+		executeWithRedrawDisabled(coolBar, () -> {
+			boolean relock = false;
+			boolean changed = false;
 
 			// Refresh the widget data with the internal data structure.
 			refresh();
@@ -906,9 +906,7 @@ public class CoolBarManager extends ContributionManager implements ICoolBarManag
 
 			// We are no longer dirty.
 			setDirty(false);
-		} finally {
-			coolBar.setRedraw(true);
-		}
+		});
 	}
 
 	/**

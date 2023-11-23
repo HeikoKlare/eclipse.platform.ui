@@ -24,6 +24,8 @@
  *******************************************************************************/
 package org.eclipse.ui.texteditor;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -3786,31 +3788,29 @@ public abstract class AbstractTextEditor extends EditorPart implements ITextEdit
 			int topIndex= sourceViewer.getTopIndex();
 
 			StyledText styledText= sourceViewer.getTextWidget();
-			Control parent= styledText;
+			Control potentialParent = styledText;
 			if (sourceViewer instanceof ITextViewerExtension) {
 				ITextViewerExtension extension= (ITextViewerExtension) sourceViewer;
-				parent= extension.getControl();
+				potentialParent = extension.getControl();
 			}
+			Control parent = potentialParent;
 
-			parent.setRedraw(false);
+			executeWithRedrawDisabled(parent, () -> {
+				styledText.setFont(font);
 
-			styledText.setFont(font);
+				if (fVerticalRuler instanceof IVerticalRulerExtension) {
+					IVerticalRulerExtension e = (IVerticalRulerExtension) fVerticalRuler;
+					e.setFont(font);
+				}
 
-			if (fVerticalRuler instanceof IVerticalRulerExtension) {
-				IVerticalRulerExtension e= (IVerticalRulerExtension) fVerticalRuler;
-				e.setFont(font);
-			}
+				provider.setSelection(selection);
+				sourceViewer.setTopIndex(topIndex);
 
-			provider.setSelection(selection);
-			sourceViewer.setTopIndex(topIndex);
-
-			if (parent instanceof Composite) {
-				Composite composite= (Composite) parent;
-				composite.layout(true);
-			}
-
-			parent.setRedraw(true);
-
+				if (parent instanceof Composite) {
+					Composite composite = (Composite) parent;
+					composite.layout(true);
+				}
+			});
 
 		} else {
 
@@ -6291,14 +6291,14 @@ public abstract class AbstractTextEditor extends EditorPart implements ITextEdit
 		}
 
 		StyledText widget= fSourceViewer.getTextWidget();
-		widget.setRedraw(false);
-		adjustHighlightRange(revealStart, revealLength);
-		fSourceViewer.revealRange(revealStart, revealLength);
+		executeWithRedrawDisabled(widget, () -> {
+			adjustHighlightRange(revealStart, revealLength);
+			fSourceViewer.revealRange(revealStart, revealLength);
 
-		fSourceViewer.setSelectedRange(selectionStart, selectionLength);
+			fSourceViewer.setSelectedRange(selectionStart, selectionLength);
 
-		markInNavigationHistory();
-		widget.setRedraw(true);
+			markInNavigationHistory();
+		});
 	}
 
 	/*

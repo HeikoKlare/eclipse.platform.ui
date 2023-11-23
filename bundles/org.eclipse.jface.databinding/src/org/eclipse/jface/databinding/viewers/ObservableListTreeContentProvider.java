@@ -15,6 +15,8 @@
 
 package org.eclipse.jface.databinding.viewers;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.Set;
 
 import org.eclipse.core.databinding.observable.IObservableCollection;
@@ -117,37 +119,31 @@ public class ObservableListTreeContentProvider<E> implements ITreeContentProvide
 					getOrCreateNode(element).addParent(parentElement);
 				}
 
-				if (suspendRedraw[0])
-					viewer.getControl().setRedraw(false);
-				try {
-					event.diff.accept(new ListDiffVisitor<Object>() {
-						@Override
-						public void handleAdd(int index, Object child) {
-							viewerUpdater.insert(parentElement, child, index);
-						}
+				ListDiffVisitor<Object> diffVisitor = new ListDiffVisitor<Object>() {
+					@Override
+					public void handleAdd(int index, Object child) {
+						viewerUpdater.insert(parentElement, child, index);
+					}
 
-						@Override
-						public void handleRemove(int index, Object child) {
-							viewerUpdater.remove(parentElement, child, index);
-						}
+					@Override
+					public void handleRemove(int index, Object child) {
+						viewerUpdater.remove(parentElement, child, index);
+					}
 
-						@Override
-						public void handleReplace(int index, Object oldChild,
-								Object newChild) {
-							viewerUpdater.replace(parentElement, oldChild,
-									newChild, index);
-						}
+					@Override
+					public void handleReplace(int index, Object oldChild, Object newChild) {
+						viewerUpdater.replace(parentElement, oldChild, newChild, index);
+					}
 
-						@Override
-						public void handleMove(int oldIndex, int newIndex,
-								Object child) {
-							viewerUpdater.move(parentElement, child, oldIndex,
-									newIndex);
-						}
-					});
-				} finally {
-					if (suspendRedraw[0])
-						viewer.getControl().setRedraw(true);
+					@Override
+					public void handleMove(int oldIndex, int newIndex, Object child) {
+						viewerUpdater.move(parentElement, child, oldIndex, newIndex);
+					}
+				};
+				if (suspendRedraw[0]) {
+					executeWithRedrawDisabled(viewer.getControl(), () -> event.diff.accept(diffVisitor));
+				} else {
+					event.diff.accept(diffVisitor);
 				}
 
 				for (E element : localKnownElementRemovals) {

@@ -16,6 +16,8 @@ package org.eclipse.ui.application;
 
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Platform.OS;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
@@ -713,6 +715,9 @@ public abstract class WorkbenchAdvisor {
 		final Display display = PlatformUI.getWorkbench().getDisplay();
 		final boolean result[] = new boolean[1];
 
+		// Configure browser data directories before restoring workbench windows
+		setDefaultBrowserDataDirectory();
+
 		// spawn another init thread. For API compatibility We guarantee this method is
 		// called from
 		// the UI thread but it could take enough time to disrupt progress reporting.
@@ -780,6 +785,22 @@ public abstract class WorkbenchAdvisor {
 			throw (RuntimeException) error[0];
 
 		return result[0];
+	}
+
+	private void setDefaultBrowserDataDirectory() {
+		if (!OS.isWindows()) {
+			return;
+		}
+
+		String edgeDataDirProperty = "org.eclipse.swt.browser.EdgeDataDir"; //$NON-NLS-1$
+		String metadataDirectoryName = ".metadata"; //$NON-NLS-1$
+
+		// If no custom user-data directory is set for edge browser, place it in
+		// workspace metadata folder
+		if (System.getProperty(edgeDataDirProperty) == null) {
+			String edgeDataDirectory = Platform.getLocation().append(metadataDirectoryName).toOSString();
+			System.setProperty(edgeDataDirProperty, edgeDataDirectory);
+		}
 	}
 
 	/**

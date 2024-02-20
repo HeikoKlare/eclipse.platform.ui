@@ -114,7 +114,7 @@ public abstract class StyledCellLabelProvider extends OwnerDrawLabelProvider {
 	 * @return <code>true</code> is the rendering of styles is enabled.
 	 */
 	public boolean isOwnerDrawEnabled() {
-		return (this.style & OWNER_DRAW_ENABLED) != 0;
+		return false;// (this.style & OWNER_DRAW_ENABLED) != 0;
 	}
 
 	/**

@@ -20,6 +20,8 @@ import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Widget;
 
 /**
  * A {@link DelegatingStyledCellLabelProvider} is a
@@ -81,6 +83,25 @@ public class DelegatingStyledCellLabelProvider extends StyledCellLabelProvider {
 		 *         if there is no image for the given object
 		 */
 		public Image getImage(Object element);
+
+		/**
+		 * Returns a preview image for the label of the given element. The image is
+		 * owned by the label provider and must not be disposed directly. Instead,
+		 * dispose the label provider when no longer needed. In case this label provider
+		 * cannot provide a fast-calculated image preview, the result will be the same
+		 * as {@link #getImage(Object)}. Otherwise, the preview image may be used for a
+		 * fast UI update that can be updated with the expensively calculated one of
+		 * {@link #getImage(Object)}. Note that there is no guarantee that the
+		 * calculation of the preview image will happen fast.
+		 *
+		 * @param element the element for which to provide the label image
+		 * @return the preview image used to label the element, or <code>null</code> if
+		 *         there is no image for the given object
+		 * @since 3.36
+		 */
+		public default Image getPreviewImage(Object element) {
+			return getImage(element);
+		}
 	}
 
 	private IStyledLabelProvider styledLabelProvider;
@@ -104,6 +125,22 @@ public class DelegatingStyledCellLabelProvider extends StyledCellLabelProvider {
 
 	@Override
 	public void update(ViewerCell cell) {
+		update(cell, false);
+		// no super call required. changes on item will trigger the refresh.
+
+	}
+
+	/**
+	 * @since 3.36
+	 */
+	@Override
+	public ILazyLabelUpdater fastUpdate(ViewerCell cell) {
+		update(cell, true);
+		return new ImageUpdater(cell);
+		// no super call required. changes on item will trigger the refresh.
+	}
+
+	private void update(ViewerCell cell, boolean fast) {
 		Object element = cell.getElement();
 
 		StyledString styledString = getStyledText(element);
@@ -121,12 +158,52 @@ public class DelegatingStyledCellLabelProvider extends StyledCellLabelProvider {
 		}
 
 		cell.setText(newText);
-		cell.setImage(getImage(element));
+		if (fast) {
+			cell.setImage(getPreviewImage(element));
+		} else {
+			cell.setImage(getImage(element));
+		}
 		cell.setFont(getFont(element));
 		cell.setForeground(getForeground(element));
 		cell.setBackground(getBackground(element));
+	}
 
-		// no super call required. changes on item will trigger the refresh.
+	private class ImageUpdater implements ILazyLabelUpdater {
+		private ViewerCell cell;
+
+		private boolean aborted;
+
+		private ImageUpdater(ViewerCell cell) {
+			this.cell = cell.getViewerRow().getCell(cell.getColumnIndex());
+		}
+
+		@Override
+		public Widget getWidget() {
+			return cell.getViewerRow().getItem();
+		}
+
+		@Override
+		public void run() {
+			if (aborted) {
+				return;
+			}
+			Image image = getImage(cell.getElement());
+			if (aborted || image == null) {
+				return;
+			}
+			Display.getDefault().asyncExec(() -> {
+				synchronized (this) {
+					if (!aborted && !getWidget().isDisposed()) {
+						cell.setImage(image);
+					}
+				}
+			});
+		}
+
+		@Override
+		public synchronized void abort() {
+			aborted = true;
+		}
 	}
 
 	/**
@@ -196,6 +273,10 @@ public class DelegatingStyledCellLabelProvider extends StyledCellLabelProvider {
 	 */
 	public Image getImage(Object element) {
 		return this.styledLabelProvider.getImage(element);
+	}
+
+	private Image getPreviewImage(Object element) {
+		return this.styledLabelProvider.getPreviewImage(element);
 	}
 
 	/**

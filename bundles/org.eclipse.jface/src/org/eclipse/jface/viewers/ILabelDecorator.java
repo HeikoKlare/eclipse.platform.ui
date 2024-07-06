@@ -44,20 +44,35 @@ public interface ILabelDecorator extends IBaseLabelProvider {
 	public Image decorateImage(Image image, Object element);
 
 	/**
-	 * Returns a text label that is based on the given text label,
-	 * but decorated with additional information relating to the state
-	 * of the provided element.
+	 * Returns whether the decoration of the image is expensive, i.e., whether there
+	 * can be used in case in which the calculation is too expensive to be performed
+	 * synchronously within a UI update.
+	 *
+	 * @return whether the image decoration can take too long to be executed during
+	 *         a UI update
+	 * @since 3.36
+	 */
+	public default boolean isImageDecorationExpensive() {
+		return false;
+	}
+
+	/**
+	 * Returns a text label that is based on the given text label, but decorated
+	 * with additional information relating to the state of the provided element.
 	 *
 	 * Text and image decoration updates can occur as a result of other updates
 	 * within the workbench including deferred decoration by background processes.
 	 * Clients should handle labelProviderChangedEvents for the given element to get
 	 * the complete decoration.
+	 *
 	 * @see LabelProviderChangedEvent
 	 * @see IBaseLabelProvider#addListener
 	 *
-	 * @param text the input text label to decorate
+	 * @param text    the input text label to decorate
 	 * @param element the element whose image is being decorated
-	 * @return the decorated text label, or <code>null</code> if no decoration is to be applied
+	 * @return the decorated text label, or <code>null</code> if no decoration is to
+	 *         be applied
 	 */
 	public String decorateText(String text, Object element);
+
 }

@@ -221,6 +221,25 @@ public abstract class CellLabelProvider extends BaseLabelProvider implements ITo
 	public abstract void update(ViewerCell cell);
 
 	/**
+	 * Performs a fast update of the label for the cell and separates expensive
+	 * update functionality into the returned {@link ILazyLabelUpdater} that can be
+	 * passed to the {@link LazyLabelUpdateService} for an asynchronous update. In
+	 * case the implementation does or even can not separate any functionality into
+	 * an asynchronous update, calling this method will be equivalent to
+	 * {@link #update(ViewerCell)} and {@code null} will be returned.
+	 *
+	 * @param cell the cell to update
+	 * @returns a lazy updater for performing expensive parts of the label update
+	 *          asynchronously, or {@code null} if nothing can be executed lazy
+	 *
+	 * @since 3.33
+	 */
+	public ILazyLabelUpdater fastUpdate(ViewerCell cell) {
+		update(cell);
+		return null;
+	}
+
+	/**
 	 * Initialize this label provider for use with the given column viewer for
 	 * the given column. Subclasses may extend but should call the super
 	 * implementation (which at this time is empty but may be changed in the

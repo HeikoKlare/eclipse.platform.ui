@@ -902,6 +902,7 @@ public abstract class AbstractTreeViewer extends ColumnViewer {
 	@Override
 	protected void disassociate(Item item) {
 		super.disassociate(item);
+		LazyLabelUpdateService.getInstance().abortUpdates(item);
 		// recursively unmapping the items is only required when
 		// the hash map is used. In the other case disposing
 		// an item will recursively dispose its children.
@@ -969,6 +970,7 @@ public abstract class AbstractTreeViewer extends ColumnViewer {
 	 *            the element
 	 */
 	protected void doUpdateItem(final Item item, Object element) {
+		LazyLabelUpdateService.getInstance().abortUpdates(item);
 		if (item.isDisposed()) {
 			unmapElement(element, item);
 			return;
@@ -997,7 +999,8 @@ public abstract class AbstractTreeViewer extends ColumnViewer {
 			ViewerColumn columnViewer = getViewerColumn(column);
 			ViewerCell cellToUpdate = new ViewerCell(viewerRowFromItem, column, element);
 
-			columnViewer.refresh(cellToUpdate);
+			ILazyLabelUpdater lazyUpdate = columnViewer.fastRefresh(cellToUpdate);
+			LazyLabelUpdateService.getInstance().submitUpdate(lazyUpdate);
 
 			// As it is possible for user code to run the event
 			// loop check here.

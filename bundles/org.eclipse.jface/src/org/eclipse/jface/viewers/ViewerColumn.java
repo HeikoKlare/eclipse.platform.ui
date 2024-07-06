@@ -133,21 +133,43 @@ public abstract class ViewerColumn {
 	 *            {@link ViewerCell}
 	 */
 	/* package */void refresh(ViewerCell cell) {
+		if (!refreshExpandableNode(cell)) {
+			getLabelProvider().update(cell);
+		}
+	}
+
+	/**
+	 * Refresh the cell for the given columnIndex. The cell is refreshed with all
+	 * information that can be calculated fast while expensive calculations can made
+	 * and applied via the returned runnable that can be executed asynchronously.
+	 *
+	 * <strong>NOTE:</strong>the {@link ViewerCell} provided to this method is no
+	 * longer valid after this method returns. Do not cache the cell for future use.
+	 *
+	 * @param cell {@link ViewerCell}
+	 */
+	ILazyLabelUpdater fastRefresh(ViewerCell cell) {
+		if (!refreshExpandableNode(cell)) {
+			return getLabelProvider().fastUpdate(cell);
+		}
+		return null;
+	}
+
+	private boolean refreshExpandableNode(ViewerCell cell) {
 		CellLabelProvider labelProvider = getLabelProvider();
 		if (labelProvider == null) {
 			Assert.isTrue(false, "Column " + cell.getColumnIndex() + //$NON-NLS-1$
-			" has no label provider."); //$NON-NLS-1$
+					" has no label provider."); //$NON-NLS-1$
 		}
 		// Set font and label for ExpandableNode. Client label provider should not
 		// receive it.
 		if (cell.getElement() instanceof ExpandableNode expNode) {
 			cell.setFont(JFaceResources.getFontRegistry().getItalic(JFaceResources.DEFAULT_FONT));
 			cell.setText(expNode.getLabel());
-			return;
+			return true;
 		}
 
-		labelProvider.update(cell);
-
+		return false;
 	}
 
 	/**

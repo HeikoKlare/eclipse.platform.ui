@@ -22,7 +22,7 @@ import org.eclipse.osgi.util.NLS;
  */
 final class ContentAssistMessages extends NLS {
 
-	private static final String BUNDLE_NAME= ContentAssistMessages.class.getName();
+	private static final String BUNDLE_NAME = ContentAssistMessages.class.getName();
 
 	private ContentAssistMessages() {
 		// Do not instantiate
@@ -33,5 +33,15 @@ final class ContentAssistMessages extends NLS {
 
 	static {
 		NLS.initializeMessages(BUNDLE_NAME, ContentAssistMessages.class);
+	}
+
+	@Override
+	protected Object clone() throws CloneNotSupportedException {
+		// TODO Auto-generated method stub
+		return super.clone();
+	}
+
+	public void test() {
+
 	}
 }

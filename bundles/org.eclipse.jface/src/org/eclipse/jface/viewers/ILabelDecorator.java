@@ -44,6 +44,13 @@ public interface ILabelDecorator extends IBaseLabelProvider {
 	public Image decorateImage(Image image, Object element);
 
 	/**
+	 * @since 3.33
+	 */
+	public default boolean isExpensive() {
+		return false;
+	}
+
+	/**
 	 * Returns a text label that is based on the given text label,
 	 * but decorated with additional information relating to the state
 	 * of the provided element.

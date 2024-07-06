@@ -67,6 +67,7 @@ public class ViewerCell {
 		this.row = row;
 		this.columnIndex = columnIndex;
 		this.element = element;
+//		System.out.println("new cell" + this); //$NON-NLS-1$
 	}
 
 	/**

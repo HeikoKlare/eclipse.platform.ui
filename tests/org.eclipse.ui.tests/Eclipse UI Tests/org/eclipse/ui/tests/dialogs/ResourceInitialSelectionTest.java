@@ -14,7 +14,10 @@
 package org.eclipse.ui.tests.dialogs;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -31,18 +34,21 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Platform.OS;
+import org.eclipse.core.tests.resources.util.WorkspaceResetExtension;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.FilteredResourcesSelectionDialog;
+import org.eclipse.ui.tests.harness.util.CloseWindowsExtension;
 import org.eclipse.ui.tests.harness.util.DisplayHelper;
-import org.eclipse.ui.tests.harness.util.UITestCase;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.eclipse.ui.tests.harness.util.ShellLeakTestExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Tests that FilteredResourcesSelectionDialog selects its initial selection
@@ -50,8 +56,10 @@ import org.junit.runners.JUnit4;
  *
  * @since 3.14
  */
-@RunWith(JUnit4.class)
-public class ResourceInitialSelectionTest extends UITestCase {
+@ExtendWith(CloseWindowsExtension.class)
+@ExtendWith(ShellLeakTestExtension.class)
+@ExtendWith(WorkspaceResetExtension.class)
+public class ResourceInitialSelectionTest {
 
 	/** The names of the files created within the test project. */
 	private final static List<String> FILE_NAMES = asList("foo.txt", "bar.txt", "foofoo");
@@ -66,18 +74,17 @@ public class ResourceInitialSelectionTest extends UITestCase {
 
 	private IProject project;
 
-	/**
-	 * Constructs a new instance of <code>ResourceItemInitialSelectionTest</code>.
-	 */
-	public ResourceInitialSelectionTest() {
-		super(ResourceInitialSelectionTest.class.getSimpleName());
-	}
-
-	@Override
-	protected void doSetUp() throws Exception {
-		super.doSetUp();
+	@BeforeEach
+	public void setUp() throws Exception {
 		FILES.clear();
 		createProject();
+	}
+
+	@AfterEach
+	protected void tearDown() throws Exception {
+		if (dialog != null) {
+			dialog.close();
+		}
 	}
 
 	/**
@@ -94,7 +101,7 @@ public class ResourceInitialSelectionTest extends UITestCase {
 
 		List<Object> selected = getSelectedItems(dialog);
 
-		assertFalse("One file should be selected by default", selected.isEmpty());
+		assertFalse(selected.isEmpty(), "One file should be selected by default");
 	}
 
 	/**
@@ -112,7 +119,7 @@ public class ResourceInitialSelectionTest extends UITestCase {
 
 		List<Object> selected = getSelectedItems(dialog);
 
-		assertEquals("One file should be selected by default", asList(FILES.get("foo.txt")), selected);
+		assertEquals(asList(FILES.get("foo.txt")), selected, "One file should be selected by default");
 	}
 
 	/**
@@ -131,7 +138,7 @@ public class ResourceInitialSelectionTest extends UITestCase {
 
 		List<Object> selected = getSelectedItems(dialog);
 
-		assertTrue("No file should be selected by default", selected.isEmpty());
+		assertTrue(selected.isEmpty(), "No file should be selected by default");
 	}
 
 	/**
@@ -148,7 +155,7 @@ public class ResourceInitialSelectionTest extends UITestCase {
 
 		List<Object> selected = getSelectedItems(dialog);
 
-		assertTrue("No file should be selected by default", selected.isEmpty());
+		assertTrue(selected.isEmpty(), "No file should be selected by default");
 	}
 
 	/**
@@ -167,7 +174,7 @@ public class ResourceInitialSelectionTest extends UITestCase {
 
 		List<Object> selected = getSelectedItems(dialog);
 
-		assertTrue("No file should be selected by default", selected.isEmpty());
+		assertTrue(selected.isEmpty(), "No file should be selected by default");
 	}
 
 	/**
@@ -186,7 +193,7 @@ public class ResourceInitialSelectionTest extends UITestCase {
 
 		List<Object> selected = getSelectedItems(dialog);
 
-		assertEquals("The first file should be selected by default", asList(FILES.get("foo.txt")), selected);
+		assertEquals(asList(FILES.get("foo.txt")), selected, "The first file should be selected by default");
 	}
 
 	/**
@@ -204,7 +211,7 @@ public class ResourceInitialSelectionTest extends UITestCase {
 
 		List<Object> selected = getSelectedItems(dialog);
 
-		assertFalse("One file should be selected by default", selected.isEmpty());
+		assertFalse(selected.isEmpty(), "One file should be selected by default");
 	}
 
 	/**
@@ -223,7 +230,7 @@ public class ResourceInitialSelectionTest extends UITestCase {
 
 		List<Object> selected = getSelectedItems(dialog);
 
-		assertEquals("One file should be selected by default", asList(FILES.get("foo.txt")), selected);
+		assertEquals(asList(FILES.get("foo.txt")), selected, "One file should be selected by default");
 	}
 
 	/**
@@ -240,7 +247,7 @@ public class ResourceInitialSelectionTest extends UITestCase {
 
 		List<Object> selected = getSelectedItems(dialog);
 
-		assertTrue("No file should be selected by default", selected.isEmpty());
+		assertTrue(selected.isEmpty(), "No file should be selected by default");
 	}
 
 	/**
@@ -259,7 +266,7 @@ public class ResourceInitialSelectionTest extends UITestCase {
 
 		List<Object> selected = getSelectedItems(dialog);
 
-		assertTrue("No file should be selected by default", selected.isEmpty());
+		assertTrue(selected.isEmpty(), "No file should be selected by default");
 	}
 
 	/**
@@ -280,7 +287,7 @@ public class ResourceInitialSelectionTest extends UITestCase {
 		Set<IFile> expectedSelection = new HashSet<>(asList(FILES.get("bar.txt"), FILES.get("foofoo")));
 		boolean allInitialElementsAreSelected = expectedSelection.equals(new HashSet<>(selected));
 
-		assertTrue("Two files should be selected by default", allInitialElementsAreSelected);
+		assertTrue(allInitialElementsAreSelected, "Two files should be selected by default");
 	}
 
 	/**
@@ -288,7 +295,7 @@ public class ResourceInitialSelectionTest extends UITestCase {
 	 */
 	@Test
 	public void testMultiSelectionAndTwoInitialSelectionsWithInitialPattern() {
-		assumeFalse("Test fails on Windows: Bug 559353", Platform.OS_WIN32.equals(Platform.getOS()));
+		assumeFalse(OS.isWindows(), "Test fails on Windows: Bug 559353");
 
 		boolean hasMultiSelection = true;
 		List<IFile> initialSelection = asList(FILES.get("foo.txt"), FILES.get("bar.txt"));
@@ -303,7 +310,7 @@ public class ResourceInitialSelectionTest extends UITestCase {
 		boolean initialElementsAreSelected = selected.containsAll(initialSelection)
 				&& initialSelection.containsAll(selected);
 
-		assertTrue("Two files should be selected by default", initialElementsAreSelected);
+		assertTrue(initialElementsAreSelected, "Two files should be selected by default");
 	}
 
 	/**
@@ -312,7 +319,7 @@ public class ResourceInitialSelectionTest extends UITestCase {
 	 */
 	@Test
 	public void testMultiSelectionAndTwoInitialFilteredSelections() {
-		assumeFalse("Test fails on Windows: Bug 559353", Platform.OS_WIN32.equals(Platform.getOS()));
+		assumeFalse(OS.isWindows(), "Test fails on Windows: Bug 559353");
 
 		boolean hasMultiSelection = true;
 
@@ -327,7 +334,7 @@ public class ResourceInitialSelectionTest extends UITestCase {
 		boolean initialElementsAreSelected = selected.containsAll(expectedSelection)
 				&& expectedSelection.containsAll(selected);
 
-		assertTrue("Two files should be selected by default", initialElementsAreSelected);
+		assertTrue(initialElementsAreSelected, "Two files should be selected by default");
 	}
 
 	private FilteredResourcesSelectionDialog createDialog(boolean multiSelection) {
@@ -373,18 +380,8 @@ public class ResourceInitialSelectionTest extends UITestCase {
 				}
 			}.waitForCondition(shell.getDisplay(), 1000);
 
-			assertTrue("File was not created", project.getFile(fileName).exists());
+			assertTrue(project.getFile(fileName).exists(), "File was not created");
 		}
 	}
 
-	@Override
-	protected void doTearDown() throws Exception {
-		if (dialog != null) {
-			dialog.close();
-		}
-		if (project != null) {
-			project.delete(true, null);
-		}
-		super.doTearDown();
-	}
 }

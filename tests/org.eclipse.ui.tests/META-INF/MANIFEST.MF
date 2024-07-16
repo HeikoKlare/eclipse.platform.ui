@@ -43,9 +43,13 @@ Require-Bundle: org.eclipse.core.resources;bundle-version="3.14.0",
  org.eclipse.ui.navigator;bundle-version="3.12.100",
  org.eclipse.search,
  org.eclipse.debug.ui,
- org.eclipse.emf.ecore
+ org.eclipse.emf.ecore,
+ org.eclipse.core.tests.resources
 Import-Package: jakarta.annotation,
  jakarta.inject,
+ org.junit.jupiter.api;version="[5.10.0,6.0.0)",
+ org.junit.jupiter.api.extension;version="[5.10.0,6.0.0)",
+ org.junit.platform.suite.api,
  org.osgi.service.event
 Eclipse-AutoStart: true
 Export-Package: org.eclipse.ui.tests.api,

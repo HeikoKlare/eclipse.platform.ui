@@ -58,7 +58,6 @@ import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.JFaceColors;
-import org.eclipse.jface.window.Window;
 
 import org.eclipse.jface.text.FindReplaceDocumentAdapter;
 import org.eclipse.jface.text.FindReplaceDocumentAdapterContentProposalProvider;
@@ -81,7 +80,7 @@ import org.eclipse.ui.texteditor.IAbstractTextEditorHelpContextIds;
 import org.eclipse.ui.texteditor.ITextEditorActionDefinitionIds;
 import org.eclipse.ui.texteditor.StatusTextEditor;
 
-public class FindReplaceOverlay extends Dialog {
+public class FindReplaceOverlay {
 	private final class KeyboardShortcuts {
 		private static final List<KeyStroke> SEARCH_FORWARD = List.of( //
 				KeyStroke.getInstance(SWT.CR), KeyStroke.getInstance(SWT.KEYPAD_CR));
@@ -149,20 +148,58 @@ public class FindReplaceOverlay extends Dialog {
 	private final TargetPartVisibilityHandler targetPartVisibilityHandler;
 	private ContentAssistCommandAdapter contentAssistSearchField, contentAssistReplaceField;
 
+	private FindReplaceOverlayDialog dialog;
+
+	private class FindReplaceOverlayDialog extends Dialog {
+
+		protected FindReplaceOverlayDialog(Shell parentShell) {
+			super(parentShell);
+			setShellStyle(SWT.MODELESS);
+			setShellStyle(SWT.DIALOG_TRIM);
+			setBlockOnOpen(false);
+		}
+
+		@Override
+		protected boolean isResizable() {
+			return false;
+		}
+
+		@Override
+		public Control createContents(Composite parent) {
+			backgroundToUse = new Color(getShell().getDisplay(), new RGBA(0, 0, 0, 0));
+			return createDialog(parent);
+		}
+
+		@Override
+		protected void handleShellCloseEvent() {
+			FindReplaceOverlay.this.close();
+		}
+
+		public void assignToNewTarget(IWorkbenchPart targetPart) {
+			FindReplaceOverlay.this.close();
+			setParentShell(targetPart.getSite().getShell());
+			FindReplaceOverlay.this.open();
+			targetPart.setFocus();
+		}
+
+	}
+
+	public Shell getShell() {
+		return dialog.getShell();
+	}
+
 	public FindReplaceOverlay(Shell parent, IWorkbenchPart part, IFindReplaceTarget target) {
-		super(parent);
+		Shell s = new Shell(parent, SWT.MODELESS);
+		s.open();
+		dialog = new FindReplaceOverlayDialog(parent);
 		createFindReplaceLogic(target);
 
-		setShellStyle(SWT.MODELESS);
-		setBlockOnOpen(false);
 		targetPart = part;
 		targetPartVisibilityHandler = new TargetPartVisibilityHandler(targetPart, this::getShell, this::close,
 				this::updatePlacementAndVisibility);
-	}
-
-	@Override
-	protected boolean isResizable() {
-		return false;
+		dialog.create();
+		PlatformUI.getWorkbench().getHelpSystem().setHelp(getShell(),
+				IAbstractTextEditorHelpContextIds.FIND_REPLACE_OVERLAY);
 	}
 
 	private void createFindReplaceLogic(IFindReplaceTarget target) {
@@ -335,10 +372,9 @@ public class FindReplaceOverlay extends Dialog {
 		return settings;
 	}
 
-	@Override
-	public boolean close() {
+	public void close() {
 		if (!overlayOpen) {
-			return true;
+			return;
 		}
 		if (targetPart != null) {
 			targetPart.setFocus();
@@ -350,14 +386,12 @@ public class FindReplaceOverlay extends Dialog {
 		replaceBarOpen = false;
 		unbindListeners();
 		container.dispose();
-		return super.close();
+		dialog.close();
 	}
 
-	@Override
-	public int open() {
-		int returnCode = Window.OK;
+	public void open() {
 		if (!overlayOpen) {
-			returnCode = super.open();
+			dialog.open();
 			bindListeners();
 			restoreOverlaySettings();
 		}
@@ -369,8 +403,6 @@ public class FindReplaceOverlay extends Dialog {
 		getShell().layout();
 		updatePlacementAndVisibility();
 		updateContentAssistAvailability();
-
-		return returnCode;
 	}
 
 	private void storeOverlaySettings() {
@@ -436,15 +468,6 @@ public class FindReplaceOverlay extends Dialog {
 		}
 	}
 
-	@Override
-	public Control createContents(Composite parent) {
-		PlatformUI.getWorkbench().getHelpSystem().setHelp(getShell(),
-				IAbstractTextEditorHelpContextIds.FIND_REPLACE_OVERLAY);
-
-		backgroundToUse = new Color(getShell().getDisplay(), new RGBA(0, 0, 0, 0));
-		return createDialog(parent);
-	}
-
 	private Control createDialog(final Composite parent) {
 		createMainContainer(parent);
 
@@ -458,7 +481,7 @@ public class FindReplaceOverlay extends Dialog {
 
 		container.layout();
 
-		applyDialogFont(container);
+		Dialog.applyDialogFont(container);
 		return container;
 	}
 
@@ -847,10 +870,7 @@ public class FindReplaceOverlay extends Dialog {
 		if (isInvalidTargetShell()) {
 			getShell().getDisplay().asyncExec(() -> {
 				if (isInvalidTargetShell()) {
-					close();
-					setParentShell(targetPart.getSite().getShell());
-					open();
-					targetPart.setFocus();
+					dialog.assignToNewTarget(targetPart);
 				}
 			});
 			return;

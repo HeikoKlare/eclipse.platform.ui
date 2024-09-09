@@ -16,7 +16,6 @@ package org.eclipse.ui.internal.findandreplace.overlay;
 import static org.eclipse.ui.internal.findandreplace.overlay.FindReplaceShortcutUtil.registerActionShortcutsAtControl;
 
 import java.util.List;
-import java.util.function.Consumer;
 
 import org.osgi.framework.FrameworkUtil;
 
@@ -25,16 +24,15 @@ import org.eclipse.swt.custom.BusyIndicator;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.ControlListener;
+import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.FocusAdapter;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.RGBA;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Button;
@@ -50,24 +48,18 @@ import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Widget;
 
 import org.eclipse.jface.bindings.keys.KeyStroke;
-import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
-import org.eclipse.jface.dialogs.IPageChangedListener;
-import org.eclipse.jface.dialogs.PageChangedEvent;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.JFaceColors;
-import org.eclipse.jface.window.Window;
 
 import org.eclipse.jface.text.FindReplaceDocumentAdapter;
 import org.eclipse.jface.text.FindReplaceDocumentAdapterContentProposalProvider;
 import org.eclipse.jface.text.IFindReplaceTarget;
 import org.eclipse.jface.text.ITextViewer;
 
-import org.eclipse.ui.IPartListener2;
 import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.IWorkbenchPartReference;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.fieldassist.ContentAssistCommandAdapter;
 import org.eclipse.ui.internal.findandreplace.FindReplaceLogic;
@@ -75,13 +67,12 @@ import org.eclipse.ui.internal.findandreplace.FindReplaceMessages;
 import org.eclipse.ui.internal.findandreplace.HistoryStore;
 import org.eclipse.ui.internal.findandreplace.SearchOptions;
 import org.eclipse.ui.internal.findandreplace.status.IFindReplaceStatus;
-import org.eclipse.ui.part.MultiPageEditorSite;
 
 import org.eclipse.ui.texteditor.IAbstractTextEditorHelpContextIds;
 import org.eclipse.ui.texteditor.ITextEditorActionDefinitionIds;
 import org.eclipse.ui.texteditor.StatusTextEditor;
 
-public class FindReplaceOverlay extends Dialog {
+public class FindReplaceOverlay {
 	private final class KeyboardShortcuts {
 		private static final List<KeyStroke> SEARCH_FORWARD = List.of( //
 				KeyStroke.getInstance(SWT.CR), KeyStroke.getInstance(SWT.KEYPAD_CR));
@@ -113,10 +104,10 @@ public class FindReplaceOverlay extends Dialog {
 
 	private FindReplaceLogic findReplaceLogic;
 	private final IWorkbenchPart targetPart;
-	private boolean overlayOpen;
 	private boolean replaceBarOpen;
 
-	private Composite container;
+	private final Composite targetControl;
+	private Composite overlayControl;
 	private Button replaceToggle;
 	private FindReplaceOverlayAction replaceToggleShortcut;
 
@@ -143,26 +134,46 @@ public class FindReplaceOverlay extends Dialog {
 	private ToolItem replaceButton;
 	private ToolItem replaceAllButton;
 
-	private Color backgroundToUse;
+	private Color widgetBackgroundColor;
 	private Color normalTextForegroundColor;
 	private boolean positionAtTop = true;
-	private final TargetPartVisibilityHandler targetPartVisibilityHandler;
 	private ContentAssistCommandAdapter contentAssistSearchField, contentAssistReplaceField;
 
-	public FindReplaceOverlay(Shell parent, IWorkbenchPart part, IFindReplaceTarget target) {
-		super(parent);
-		createFindReplaceLogic(target);
+	private class FixColorComposite extends Composite {
+		private Color fixColor;
 
-		setShellStyle(SWT.MODELESS);
-		setBlockOnOpen(false);
-		targetPart = part;
-		targetPartVisibilityHandler = new TargetPartVisibilityHandler(targetPart, this::asyncExecIfOpen, this::close,
-				this::updatePlacementAndVisibility);
+		public FixColorComposite(Composite parent, int style, Color fixColor) {
+			super(parent, style);
+			this.fixColor = fixColor;
+			setBackground(fixColor);
+		}
+
+		@Override
+		public void setBackground(Color color) {
+			super.setBackground(fixColor);
+		}
 	}
 
-	@Override
-	protected boolean isResizable() {
-		return false;
+	public FindReplaceOverlay(Shell parent, IWorkbenchPart part, IFindReplaceTarget target) {
+		targetPart = part;
+		targetControl = getTargetControl(parent, part);
+		createFindReplaceLogic(target);
+		createDialog(targetControl);
+		overlayControl.setVisible(false);
+		PlatformUI.getWorkbench().getHelpSystem().setHelp(overlayControl,
+				IAbstractTextEditorHelpContextIds.FIND_REPLACE_OVERLAY);
+	}
+
+	private static Composite getTargetControl(Shell targetShell, IWorkbenchPart targetPart) {
+		if (targetPart instanceof StatusTextEditor textEditor) {
+			return textEditor.getAdapter(ITextViewer.class).getTextWidget();
+		} else {
+			return targetShell;
+		}
+	}
+
+	private boolean insertedInTargetParent() {
+		return targetControl instanceof StyledText;
 	}
 
 	private void createFindReplaceLogic(IFindReplaceTarget target) {
@@ -179,7 +190,7 @@ public class FindReplaceOverlay extends Dialog {
 	}
 
 	private void performReplaceAll() {
-		BusyIndicator.showWhile(getShell() != null ? getShell().getDisplay() : Display.getCurrent(),
+		BusyIndicator.showWhile(overlayControl.getShell() != null ? overlayControl.getShell().getDisplay() : Display.getCurrent(),
 				findReplaceLogic::performReplaceAll);
 		evaluateFindReplaceStatus();
 		replaceBar.storeHistory();
@@ -187,7 +198,7 @@ public class FindReplaceOverlay extends Dialog {
 	}
 
 	private void performSelectAll() {
-		BusyIndicator.showWhile(getShell() != null ? getShell().getDisplay() : Display.getCurrent(),
+		BusyIndicator.showWhile(overlayControl.getShell() != null ? overlayControl.getShell().getDisplay() : Display.getCurrent(),
 				findReplaceLogic::performSelectAll);
 		searchBar.storeHistory();
 	}
@@ -208,120 +219,22 @@ public class FindReplaceOverlay extends Dialog {
 			FindReplaceOverlay.this::updatePlacementAndVisibility);
 
 	private void asyncExecIfOpen(Runnable operation) {
-		Shell shell = getShell();
+		Shell shell = overlayControl.getShell();
 		if (shell != null) {
 			shell.getDisplay().asyncExec(() -> {
-				if (getShell() != null) {
+				if (overlayControl != null || overlayControl.isDisposed() && overlayControl.getShell() != null) {
 					operation.run();
 				}
 			});
 		}
 	}
 
-	private ShellAdapter overlayDeactivationListener = new ShellAdapter() {
+	private FocusAdapter targetFocusListener = new FocusAdapter() {
 		@Override
-		public void shellActivated(ShellEvent e) {
-			// Do nothing
-		}
-
-		@Override
-		public void shellDeactivated(ShellEvent e) {
+		public void focusGained(FocusEvent e) {
 			removeSearchScope();
 		}
 	};
-
-	private static class TargetPartVisibilityHandler implements IPartListener2, IPageChangedListener {
-		private final IWorkbenchPart targetPart;
-		private final IWorkbenchPart topLevelPart;
-		private final Consumer<Runnable> asyncExecIfOpen;
-		private final Runnable closeCallback;
-		private final Runnable placementUpdateCallback;
-
-		private boolean isTopLevelVisible = true;
-		private boolean isNestedLevelVisible = true;
-
-		TargetPartVisibilityHandler(IWorkbenchPart targetPart, Consumer<Runnable> asyncExecIfOpen,
-				Runnable closeCallback,
-				Runnable placementUpdateCallback) {
-			this.targetPart = targetPart;
-			this.asyncExecIfOpen = asyncExecIfOpen;
-			this.closeCallback = closeCallback;
-			this.placementUpdateCallback = placementUpdateCallback;
-			if (targetPart != null && targetPart.getSite() instanceof MultiPageEditorSite multiEditorSite) {
-				topLevelPart = multiEditorSite.getMultiPageEditor();
-			} else {
-				topLevelPart = targetPart;
-			}
-		}
-
-		@Override
-		public void partBroughtToTop(IWorkbenchPartReference partRef) {
-			if (partRef.getPart(false) == topLevelPart && !isTopLevelVisible) {
-				this.isTopLevelVisible = true;
-				asyncExecIfOpen.accept(this::adaptToPartActivationChange);
-			}
-		}
-
-		@Override
-		public void partVisible(IWorkbenchPartReference partRef) {
-			if (partRef.getPart(false) == topLevelPart && !isTopLevelVisible) {
-				this.isTopLevelVisible = true;
-				asyncExecIfOpen.accept(this::adaptToPartActivationChange);
-			}
-		}
-
-		@Override
-		public void partHidden(IWorkbenchPartReference partRef) {
-			if (partRef.getPart(false) == topLevelPart && isTopLevelVisible) {
-				this.isTopLevelVisible = false;
-				asyncExecIfOpen.accept(this::adaptToPartActivationChange);
-			}
-		}
-
-		@Override
-		public void partClosed(IWorkbenchPartReference partRef) {
-			if (partRef.getPart(false) == topLevelPart) {
-				closeCallback.run();
-			}
-		}
-
-		@Override
-		public void pageChanged(PageChangedEvent event) {
-			if (event.getSource() == topLevelPart) {
-				boolean isPageVisible = event.getSelectedPage() == targetPart;
-				if (isNestedLevelVisible != isPageVisible) {
-					this.isNestedLevelVisible = isPageVisible;
-					asyncExecIfOpen.accept(this::adaptToPartActivationChange);
-				}
-			}
-		}
-
-		private void adaptToPartActivationChange() {
-			if (targetPart.getSite().getPart() == null) {
-				return;
-			}
-			placementUpdateCallback.run();
-
-			if (!isTargetVisible()) {
-				targetPart.getSite().getShell().setActive();
-				targetPart.setFocus();
-				asyncExecIfOpen.accept(this::focusTargetWidget);
-			}
-		}
-
-		private void focusTargetWidget() {
-			if (targetPart.getSite().getPart() == null) {
-				return;
-			}
-			if (targetPart instanceof StatusTextEditor textEditor) {
-				textEditor.getAdapter(ITextViewer.class).getTextWidget().forceFocus();
-			}
-		}
-
-		public boolean isTargetVisible() {
-			return isTopLevelVisible && isNestedLevelVisible;
-		}
-	}
 
 	private KeyListener closeOnTargetEscapeListener = KeyListener.keyPressedAdapter(c -> {
 		if (c.keyCode == SWT.ESC) {
@@ -341,10 +254,9 @@ public class FindReplaceOverlay extends Dialog {
 		return settings;
 	}
 
-	@Override
-	public boolean close() {
-		if (!overlayOpen) {
-			return true;
+	public void close() {
+		if (!overlayControl.isVisible()) {
+			return;
 		}
 		if (targetPart != null) {
 			targetPart.setFocus();
@@ -352,31 +264,23 @@ public class FindReplaceOverlay extends Dialog {
 		storeOverlaySettings();
 
 		findReplaceLogic.activate(SearchOptions.GLOBAL);
-		overlayOpen = false;
-		replaceBarOpen = false;
 		unbindListeners();
-		container.dispose();
-		return super.close();
+		overlayControl.setVisible(false);
 	}
 
-	@Override
-	public int open() {
-		int returnCode = Window.OK;
-		if (!overlayOpen) {
-			returnCode = super.open();
+	public void open() {
+		if (!overlayControl.isVisible()) {
+			overlayControl.setVisible(true);
 			bindListeners();
 			restoreOverlaySettings();
 		}
-		overlayOpen = true;
-		applyOverlayColors(backgroundToUse, true);
-		updateFromTargetSelection();
-		searchBar.forceFocus();
-
-		getShell().layout();
+		overlayControl.layout();
+		overlayControl.moveAbove(null);
 		updatePlacementAndVisibility();
 		updateContentAssistAvailability();
 
-		return returnCode;
+		updateFromTargetSelection();
+		searchBar.forceFocus();
 	}
 
 	private void storeOverlaySettings() {
@@ -385,77 +289,30 @@ public class FindReplaceOverlay extends Dialog {
 
 	private void restoreOverlaySettings() {
 		Boolean shouldOpenReplaceBar = getDialogSettings().getBoolean(REPLACE_BAR_OPEN_DIALOG_SETTING);
-		if (shouldOpenReplaceBar) {
-			toggleReplace();
-		}
-	}
-
-	private void applyOverlayColors(Color color, boolean tryToColorReplaceBar) {
-		closeTools.setBackground(color);
-		closeButton.setBackground(color);
-
-		searchTools.setBackground(color);
-		searchInSelectionButton.setBackground(color);
-		wholeWordSearchButton.setBackground(color);
-		regexSearchButton.setBackground(color);
-		caseSensitiveSearchButton.setBackground(color);
-		searchAllButton.setBackground(color);
-		searchUpButton.setBackground(color);
-		searchDownButton.setBackground(color);
-
-		searchBarContainer.setBackground(color);
-		searchBar.setBackground(color);
-		searchContainer.setBackground(color);
-
-		if (replaceBarOpen && tryToColorReplaceBar) {
-			replaceContainer.setBackground(color);
-			replaceBar.setBackground(color);
-			replaceBarContainer.setBackground(color);
-			replaceTools.setBackground(color);
-			replaceAllButton.setBackground(color);
-			replaceButton.setBackground(color);
-		}
+		setReplaceVisible(shouldOpenReplaceBar);
 	}
 
 	private void unbindListeners() {
-		getShell().removeShellListener(overlayDeactivationListener);
-		if (targetPart != null && targetPart instanceof StatusTextEditor textEditor) {
-			Control targetWidget = textEditor.getAdapter(ITextViewer.class).getTextWidget();
-			if (targetWidget != null) {
-				targetWidget.getShell().removeControlListener(shellMovementListener);
-				targetWidget.removeListener(SWT.Move, targetRelocationListener);
-				targetWidget.removeListener(SWT.Resize, targetRelocationListener);
-				targetWidget.removeKeyListener(closeOnTargetEscapeListener);
-				targetPart.getSite().getPage().removePartListener(targetPartVisibilityHandler);
-			}
-		}
+		targetControl.removeFocusListener(targetFocusListener);
+		targetControl.removeControlListener(shellMovementListener);
+		targetControl.removeListener(SWT.Resize, targetRelocationListener);
+		targetControl.removeListener(SWT.Move, targetRelocationListener);
+		targetControl.removeKeyListener(closeOnTargetEscapeListener);
 	}
 
 	private void bindListeners() {
-		getShell().addShellListener(overlayDeactivationListener);
-		if (targetPart instanceof StatusTextEditor textEditor) {
-			Control targetWidget = textEditor.getAdapter(ITextViewer.class).getTextWidget();
+		targetControl.addFocusListener(targetFocusListener);
+		targetControl.addControlListener(shellMovementListener);
+		targetControl.addListener(SWT.Resize, targetRelocationListener);
+		targetControl.addListener(SWT.Move, targetRelocationListener);
+		targetControl.addKeyListener(closeOnTargetEscapeListener);
+	}
 
-			targetWidget.getShell().addControlListener(shellMovementListener);
-			targetWidget.addListener(SWT.Move, targetRelocationListener);
-			targetWidget.addListener(SWT.Resize, targetRelocationListener);
-			targetWidget.addKeyListener(closeOnTargetEscapeListener);
-			targetPart.getSite().getPage().addPartListener(targetPartVisibilityHandler);
+	private void createDialog(Composite parent) {
+		if (insertedInTargetParent()) {
+			parent = parent.getParent();
 		}
-	}
-
-	@Override
-	public Control createContents(Composite parent) {
-		PlatformUI.getWorkbench().getHelpSystem().setHelp(getShell(),
-				IAbstractTextEditorHelpContextIds.FIND_REPLACE_OVERLAY);
-
-		backgroundToUse = new Color(getShell().getDisplay(), new RGBA(0, 0, 0, 0));
-		return createDialog(parent);
-	}
-
-	private Control createDialog(final Composite parent) {
 		createMainContainer(parent);
-
 		retrieveBackgroundColor();
 
 		createFindContainer();
@@ -464,10 +321,7 @@ public class FindReplaceOverlay extends Dialog {
 		createCloseTools();
 		initializeSearchShortcutHandlers();
 
-		container.layout();
-
-		applyDialogFont(container);
-		return container;
+		overlayControl.layout();
 	}
 
 	private void initializeSearchShortcutHandlers() {
@@ -485,12 +339,12 @@ public class FindReplaceOverlay extends Dialog {
 	private void retrieveBackgroundColor() {
 		if (targetPart instanceof StatusTextEditor textEditor) {
 			Control targetWidget = textEditor.getAdapter(ITextViewer.class).getTextWidget();
-			backgroundToUse = targetWidget.getBackground();
+			widgetBackgroundColor = targetWidget.getBackground();
 			normalTextForegroundColor = targetWidget.getForeground();
 		} else {
-			Text textBarForRetrievingTheRightColor = new Text(container, SWT.SINGLE | SWT.SEARCH);
-			container.layout();
-			backgroundToUse = textBarForRetrievingTheRightColor.getBackground();
+			Text textBarForRetrievingTheRightColor = new Text(overlayControl, SWT.SINGLE | SWT.SEARCH);
+			overlayControl.layout();
+			widgetBackgroundColor = textBarForRetrievingTheRightColor.getBackground();
 			normalTextForegroundColor = textBarForRetrievingTheRightColor.getForeground();
 			textBarForRetrievingTheRightColor.dispose();
 		}
@@ -588,7 +442,7 @@ public class FindReplaceOverlay extends Dialog {
 	}
 
 	private void createReplaceTools() {
-		Color warningColor = JFaceColors.getErrorText(getShell().getDisplay());
+		Color warningColor = JFaceColors.getErrorText(overlayControl.getShell().getDisplay());
 
 		replaceTools = new AccessibleToolBar(replaceContainer);
 
@@ -677,61 +531,58 @@ public class FindReplaceOverlay extends Dialog {
 	}
 
 	private void createFindContainer() {
-		searchContainer = new Composite(contentGroup, SWT.NONE);
+		searchContainer = new FixColorComposite(contentGroup, SWT.NONE, widgetBackgroundColor);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(searchContainer);
 		GridLayoutFactory.fillDefaults().numColumns(3).extendedMargins(4, 4, 3, 5).equalWidth(false)
 				.applyTo(searchContainer);
-		searchContainer.setBackground(getShell().getDisplay().getSystemColor(SWT.COLOR_WIDGET_LIGHT_SHADOW));
 		searchBarContainer = new Composite(searchContainer, SWT.NONE);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(searchBarContainer);
 		GridLayoutFactory.fillDefaults().numColumns(1).applyTo(searchBarContainer);
 	}
 
 	private void createReplaceContainer() {
-		replaceContainer = new Composite(contentGroup, SWT.NONE);
+		replaceContainer = new FixColorComposite(contentGroup, SWT.NONE, widgetBackgroundColor);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(replaceContainer);
 		GridLayoutFactory.fillDefaults().margins(0, 1).numColumns(2).extendedMargins(4, 4, 3, 5).equalWidth(false)
 				.applyTo(replaceContainer);
-		replaceContainer.setBackground(getShell().getDisplay().getSystemColor(SWT.COLOR_WIDGET_LIGHT_SHADOW));
 		replaceBarContainer = new Composite(replaceContainer, SWT.NONE);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.END).applyTo(replaceBarContainer);
 		GridLayoutFactory.fillDefaults().numColumns(1).equalWidth(false).applyTo(replaceBarContainer);
 	}
 
 	private void createMainContainer(final Composite parent) {
-		container = new Composite(parent, SWT.NONE);
-		GridLayoutFactory.fillDefaults().numColumns(2).equalWidth(false).margins(2, 2).spacing(2, 0).applyTo(container);
-		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(container);
+		overlayControl = new FixColorComposite(parent, SWT.NONE, targetControl.getShell().getBackground());
+		GridLayoutFactory.fillDefaults().numColumns(2).equalWidth(false).margins(2, 2).spacing(2, 0).applyTo(overlayControl);
+		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(overlayControl);
 
 		createReplaceToggle();
 
-		contentGroup = new Composite(container, SWT.NULL);
+		contentGroup = new FixColorComposite(overlayControl, SWT.NONE, targetControl.getShell().getBackground());
 		GridLayoutFactory.fillDefaults().numColumns(1).equalWidth(false).spacing(2, 3).applyTo(contentGroup);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(contentGroup);
 	}
 
 	private void createReplaceToggle() {
-		replaceToggleShortcut = new FindReplaceOverlayAction(this::toggleReplace);
+		replaceToggleShortcut = new FindReplaceOverlayAction(() -> setReplaceVisible(!replaceBarOpen));
 		replaceToggleShortcut.addShortcuts(KeyboardShortcuts.TOGGLE_REPLACE);
-		replaceToggle = new Button(container, SWT.FLAT | SWT.PUSH);
+		replaceToggle = new Button(overlayControl, SWT.FLAT | SWT.PUSH);
 		GridDataFactory.fillDefaults().grab(false, true).align(GridData.BEGINNING, GridData.FILL)
 				.applyTo(replaceToggle);
 		replaceToggle.setToolTipText(replaceToggleShortcut
 				.addShortcutHintToTooltipText(FindReplaceMessages.FindReplaceOverlay_replaceToggle_toolTip));
 		replaceToggle.setImage(FindReplaceOverlayImages.get(FindReplaceOverlayImages.KEY_OPEN_REPLACE_AREA));
-		replaceToggle.addSelectionListener(SelectionListener.widgetSelectedAdapter(e -> toggleReplace()));
+		replaceToggle.addSelectionListener(
+				SelectionListener.widgetSelectedAdapter(e -> setReplaceVisible(!replaceBarOpen)));
 	}
 
-	private void toggleReplace() {
-		if (!replaceBarOpen && findReplaceLogic.getTarget().isEditable()) {
+	private void setReplaceVisible(boolean visible) {
+		if (findReplaceLogic.getTarget().isEditable() && visible) {
 			createReplaceDialog();
 			replaceToggle.setImage(FindReplaceOverlayImages.get(FindReplaceOverlayImages.KEY_CLOSE_REPLACE_AREA));
 		} else {
 			hideReplace();
 			replaceToggle.setImage(FindReplaceOverlayImages.get(FindReplaceOverlayImages.KEY_OPEN_REPLACE_AREA));
 		}
-		replaceToggle.setSelection(false); // We don't want the button to look "locked in", so don't
-											// use it's selectionState
 		updateContentAssistAvailability();
 	}
 
@@ -757,7 +608,6 @@ public class FindReplaceOverlay extends Dialog {
 		initializeReplaceShortcutHandlers();
 
 		updatePlacementAndVisibility();
-		applyOverlayColors(backgroundToUse, true);
 		replaceBar.forceFocus();
 	}
 
@@ -851,33 +701,13 @@ public class FindReplaceOverlay extends Dialog {
 	}
 
 	private void updatePlacementAndVisibility() {
-		if (!targetPartVisibilityHandler.isTargetVisible()) {
-			getShell().setVisible(false);
-			return;
-		}
-		if (isInvalidTargetShell()) {
-			asyncExecIfOpen(() -> {
-				if (isInvalidTargetShell()) {
-					close();
-					setParentShell(targetPart.getSite().getShell());
-					open();
-					targetPart.setFocus();
-				}
-			});
-			return;
-		}
-		getShell().requestLayout();
-		if (!(targetPart instanceof StatusTextEditor textEditor)) {
-			return;
-		}
-
-		Control targetWidget = textEditor.getAdapter(ITextViewer.class).getTextWidget();
-		if (!okayToUse(targetWidget)) {
+		if (!okayToUse(targetControl)) {
 			this.close();
 			return;
 		}
 
-		Rectangle targetControlBounds = calculateAbsoluteControlBounds(targetWidget);
+		overlayControl.requestLayout();
+		Rectangle targetControlBounds = calculateControlBounds(targetControl);
 		Rectangle overlayBounds = calculateDesiredOverlayBounds(targetControlBounds);
 		updatePosition(overlayBounds);
 		configureDisplayedWidgetsForWidth(overlayBounds.width);
@@ -886,21 +716,16 @@ public class FindReplaceOverlay extends Dialog {
 		repositionTextSelection();
 	}
 
-	private boolean isInvalidTargetPart() {
-		return targetPart == null || targetPart.getSite() == null || targetPart.getSite().getShell() == null;
-	}
-
-	private boolean isInvalidTargetShell() {
-		if (isInvalidTargetPart()) {
-			return false;
+	private Rectangle calculateControlBounds(Control control) {
+		Rectangle controlBounds = control.getBounds();
+		int width = controlBounds.width;
+		int height = controlBounds.height;
+		int x = 0;
+		int y = 0;
+		if (insertedInTargetParent()) {
+			x = controlBounds.x;
+			y = controlBounds.y;
 		}
-		return !targetPart.getSite().getShell().equals(getShell().getParent());
-	}
-
-	private Rectangle calculateAbsoluteControlBounds(Control control) {
-		Rectangle localControlBounds = control.getBounds();
-		int width = localControlBounds.width;
-		int height = localControlBounds.height;
 		if (control instanceof Scrollable scrollable) {
 			ScrollBar verticalBar = scrollable.getVerticalBar();
 			ScrollBar horizontalBar = scrollable.getHorizontalBar();
@@ -914,13 +739,12 @@ public class FindReplaceOverlay extends Dialog {
 		if (control instanceof StyledText styledText) {
 			width -= styledText.getRightMargin();
 		}
-		Point absoluteControlPosition = control.toDisplay(0, 0);
-		return new Rectangle(absoluteControlPosition.x, absoluteControlPosition.y, width, height);
+		return new Rectangle(x, y, width, height);
 	}
 
 	private Rectangle calculateDesiredOverlayBounds(Rectangle targetControlBounds) {
 		int width = getIdealOverlayWidth(targetControlBounds);
-		int height = container.computeSize(SWT.DEFAULT, SWT.DEFAULT).y;
+		int height = overlayControl.computeSize(SWT.DEFAULT, SWT.DEFAULT).y;
 
 		int x = targetControlBounds.x + targetControlBounds.width - width;
 		int y = targetControlBounds.y;
@@ -932,9 +756,9 @@ public class FindReplaceOverlay extends Dialog {
 	}
 
 	private void updatePosition(Rectangle overlayBounds) {
-		getShell().setSize(new Point(overlayBounds.width, overlayBounds.height));
-		getShell().setLocation(new Point(overlayBounds.x, overlayBounds.y));
-		getShell().layout(true);
+		overlayControl.setSize(new Point(overlayBounds.width, overlayBounds.height));
+		overlayControl.setLocation(new Point(overlayBounds.x, overlayBounds.y));
+		overlayControl.layout(true);
 	}
 
 	private void updateVisibility(Rectangle targetControlBounds, Rectangle overlayBounds) {
@@ -945,9 +769,8 @@ public class FindReplaceOverlay extends Dialog {
 		} else {
 			shallBeVisible = overlayBounds.y >= targetControlBounds.y;
 		}
-		Shell shell = getShell();
-		if (shallBeVisible != shell.isVisible()) {
-			shell.setVisible(shallBeVisible);
+		if (shallBeVisible != overlayControl.isVisible()) {
+			overlayControl.setVisible(shallBeVisible);
 		}
 	}
 
@@ -987,7 +810,7 @@ public class FindReplaceOverlay extends Dialog {
 	}
 
 	private void evaluateFindReplaceStatus() {
-		Color warningColor = JFaceColors.getErrorText(getShell().getDisplay());
+		Color warningColor = JFaceColors.getErrorText(overlayControl.getShell().getDisplay());
 		IFindReplaceStatus status = findReplaceLogic.getStatus();
 
 		if (!status.wasSuccessful()) {
@@ -1019,7 +842,7 @@ public class FindReplaceOverlay extends Dialog {
 
 	public void setPositionToTop(boolean shouldPositionOverlayOnTop) {
 		positionAtTop = shouldPositionOverlayOnTop;
-		if (overlayOpen) {
+		if (overlayControl != null && overlayControl.isVisible()) {
 			updatePlacementAndVisibility();
 		}
 	}
@@ -1038,5 +861,9 @@ public class FindReplaceOverlay extends Dialog {
 
 	private void updateContentAssistAvailability() {
 		setContentAssistsEnablement(findReplaceLogic.isAvailableAndActive(SearchOptions.REGEX));
+	}
+
+	public void addDisposeListener(DisposeListener listener) {
+		overlayControl.addDisposeListener(listener);
 	}
 }

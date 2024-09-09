@@ -21,13 +21,16 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.eclipse.swt.SWT;
+<<<<<<< HEAD
+=======
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Composite;
+>>>>>>> 5d8d180d05 (Find/replace overlay: replace shell with integrated composite #2099)
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.ToolItem;
 
 import org.eclipse.text.tests.Accessor;
@@ -40,6 +43,8 @@ import org.eclipse.ui.internal.findandreplace.SearchOptions;
 
 class OverlayAccess implements IFindReplaceUIAccess {
 	private final IFindReplaceTarget findReplaceTarget;
+
+	private final Composite overlayControl;
 
 	private final HistoryTextWrapper find;
 
@@ -67,11 +72,10 @@ class OverlayAccess implements IFindReplaceUIAccess {
 
 	private final Accessor dialogAccessor;
 
-	private final Supplier<Shell> shellRetriever;
-
 	OverlayAccess(IFindReplaceTarget findReplaceTarget, Accessor findReplaceOverlayAccessor) {
 		this.findReplaceTarget= findReplaceTarget;
 		dialogAccessor= findReplaceOverlayAccessor;
+		overlayControl= (Composite) findReplaceOverlayAccessor.get("overlayControl");
 		find= (HistoryTextWrapper) findReplaceOverlayAccessor.get("searchBar");
 		replace= (HistoryTextWrapper) findReplaceOverlayAccessor.get("replaceBar");
 		caseSensitive= (ToolItem) findReplaceOverlayAccessor.get("caseSensitiveSearchButton");
@@ -84,7 +88,6 @@ class OverlayAccess implements IFindReplaceUIAccess {
 		replaceButton= (ToolItem) findReplaceOverlayAccessor.get("replaceButton");
 		replaceAllButton= (ToolItem) findReplaceOverlayAccessor.get("replaceAllButton");
 		inSelection= (ToolItem) findReplaceOverlayAccessor.get("searchInSelectionButton");
-		shellRetriever= () -> ((Shell) findReplaceOverlayAccessor.invoke("getShell", null));
 	}
 
 	private void restoreInitialConfiguration() {
@@ -308,15 +311,19 @@ class OverlayAccess implements IFindReplaceUIAccess {
 
 	@Override
 	public boolean isShown() {
-		return shellRetriever.get() != null && shellRetriever.get().isVisible();
+		return overlayControl.isVisible();
 	}
 
 	@Override
 	public boolean hasFocus() {
-		Shell overlayShell= shellRetriever.get();
-		Control focusControl= overlayShell.getDisplay().getFocusControl();
-		Shell focusControlShell= focusControl != null ? focusControl.getShell() : null;
-		return focusControlShell == overlayShell;
+		Control focusControl= overlayControl.getDisplay().getFocusControl();
+		while (focusControl != null) {
+			if (overlayControl == focusControl) {
+				return true;
+			}
+			focusControl= focusControl.getParent();
+		}
+		return false;
 	}
 
 }

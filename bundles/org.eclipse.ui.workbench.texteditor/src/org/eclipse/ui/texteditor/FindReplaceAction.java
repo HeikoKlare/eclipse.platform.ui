@@ -429,7 +429,7 @@ public class FindReplaceAction extends ResourceAction implements IUpdate {
 		overlay.setPositionToTop(shouldPositionOverlayOnTop());
 
 		hookDialogPreferenceListener();
-		overlay.getShell().addDisposeListener(__ -> removeDialogPreferenceListener());
+		overlay.addDisposeListener(__ -> removeDialogPreferenceListener());
 	}
 
 	@Override

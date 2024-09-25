@@ -24,6 +24,7 @@ public final class FindReplaceShortcutUtil {
 	static void registerActionShortcutsAtControl(FindReplaceOverlayAction action, Control control) {
 		control.addKeyListener(KeyListener.keyPressedAdapter(event -> {
 			KeyStroke actualStroke = extractKeyStroke(event);
+			System.out.println(actualStroke);
 			if (action.executeIfMatching(actualStroke)) {
 				event.doit = false;
 			}

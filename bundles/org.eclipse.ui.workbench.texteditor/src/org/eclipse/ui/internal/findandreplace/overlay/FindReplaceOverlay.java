@@ -15,6 +15,8 @@ package org.eclipse.ui.internal.findandreplace.overlay;
 
 import static org.eclipse.ui.internal.findandreplace.overlay.FindReplaceShortcutUtil.registerActionShortcutsAtControl;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 
 import org.osgi.framework.FrameworkUtil;
@@ -47,6 +49,8 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Widget;
 
+import org.eclipse.core.runtime.Status;
+
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
@@ -67,7 +71,9 @@ import org.eclipse.ui.internal.findandreplace.FindReplaceMessages;
 import org.eclipse.ui.internal.findandreplace.HistoryStore;
 import org.eclipse.ui.internal.findandreplace.SearchOptions;
 import org.eclipse.ui.internal.findandreplace.status.IFindReplaceStatus;
+import org.eclipse.ui.internal.texteditor.TextEditorPlugin;
 
+import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.IAbstractTextEditorHelpContextIds;
 import org.eclipse.ui.texteditor.ITextEditorActionDefinitionIds;
 import org.eclipse.ui.texteditor.StatusTextEditor;
@@ -83,11 +89,11 @@ public class FindReplaceOverlay {
 		private static final List<KeyStroke> OPTION_CASE_SENSITIVE = List.of( //
 				KeyStroke.getInstance(SWT.MOD1 | SWT.SHIFT, 'C'), KeyStroke.getInstance(SWT.MOD1 | SWT.SHIFT, 'c'));
 		private static final List<KeyStroke> OPTION_WHOLE_WORD = List.of( //
-				KeyStroke.getInstance(SWT.MOD1 | SWT.SHIFT, 'W'), KeyStroke.getInstance(SWT.MOD1 | SWT.SHIFT, 'w'));
+				KeyStroke.getInstance(SWT.MOD1 | SWT.SHIFT, 'D'), KeyStroke.getInstance(SWT.MOD1 | SWT.SHIFT, 'd'));
 		private static final List<KeyStroke> OPTION_REGEX = List.of( //
 				KeyStroke.getInstance(SWT.MOD1 | SWT.SHIFT, 'P'), KeyStroke.getInstance(SWT.MOD1 | SWT.SHIFT, 'p'));
 		private static final List<KeyStroke> OPTION_SEARCH_IN_SELECTION = List.of( //
-				KeyStroke.getInstance(SWT.MOD1 | SWT.SHIFT, 'A'), KeyStroke.getInstance(SWT.MOD1 | SWT.SHIFT, 'a'));
+				KeyStroke.getInstance(SWT.MOD1 | SWT.SHIFT, 'I'), KeyStroke.getInstance(SWT.MOD1 | SWT.SHIFT, 'i'));
 		private static final List<KeyStroke> CLOSE = List.of( //
 				KeyStroke.getInstance(SWT.ESC), KeyStroke.getInstance(SWT.MOD1, 'F'),
 				KeyStroke.getInstance(SWT.MOD1, 'f'));
@@ -135,6 +141,7 @@ public class FindReplaceOverlay {
 	private ToolItem replaceAllButton;
 
 	private Color widgetBackgroundColor;
+	private Color overlayBackgroundColor;
 	private Color normalTextForegroundColor;
 	private boolean positionAtTop = true;
 	private ContentAssistCommandAdapter contentAssistSearchField, contentAssistReplaceField;
@@ -312,8 +319,8 @@ public class FindReplaceOverlay {
 		if (insertedInTargetParent()) {
 			parent = parent.getParent();
 		}
-		createMainContainer(parent);
 		retrieveBackgroundColor();
+		createMainContainer(parent);
 
 		createFindContainer();
 		createSearchBar();
@@ -342,12 +349,22 @@ public class FindReplaceOverlay {
 			widgetBackgroundColor = targetWidget.getBackground();
 			normalTextForegroundColor = targetWidget.getForeground();
 		} else {
-			Text textBarForRetrievingTheRightColor = new Text(overlayControl, SWT.SINGLE | SWT.SEARCH);
-			overlayControl.layout();
+			Text textBarForRetrievingTheRightColor = new Text(targetControl.getShell(), SWT.SINGLE | SWT.SEARCH);
+			targetControl.getShell().layout();
 			widgetBackgroundColor = textBarForRetrievingTheRightColor.getBackground();
 			normalTextForegroundColor = textBarForRetrievingTheRightColor.getForeground();
 			textBarForRetrievingTheRightColor.dispose();
 		}
+		Control flatButton = new Button(targetControl.getShell(), SWT.FLAT | SWT.PUSH);
+		overlayBackgroundColor = flatButton.getBackground();
+		flatButton.dispose();
+		System.out.println(overlayBackgroundColor);
+		Text textBarForRetrievingTheRightColor = new Text(targetControl.getShell(), SWT.SINGLE | SWT.SEARCH);
+		targetControl.getShell().layout();
+		overlayBackgroundColor = textBarForRetrievingTheRightColor.getBackground();
+		normalTextForegroundColor = textBarForRetrievingTheRightColor.getForeground();
+		System.out.println(overlayBackgroundColor);
+		textBarForRetrievingTheRightColor.dispose();
 	}
 
 
@@ -498,11 +515,32 @@ public class FindReplaceOverlay {
 			@Override
 			public void focusGained(FocusEvent e) {
 				findReplaceLogic.resetIncrementalBaseLocation();
+				setTextEditorActionsActivated(false);
 			}
 
 			@Override
 			public void focusLost(FocusEvent e) {
 				showUserFeedback(normalTextForegroundColor, false);
+				setTextEditorActionsActivated(true);
+			}
+
+			/*
+			 * Adapted from
+			 * org.eclipse.jdt.internal.ui.javaeditor.JavaEditor#setActionsActivated(
+			 * boolean)
+			 */
+			private void setTextEditorActionsActivated(boolean state) {
+				if (!(targetPart instanceof AbstractTextEditor)) {
+					return;
+				}
+				try {
+					Method method = AbstractTextEditor.class.getDeclaredMethod("setActionActivation", boolean.class); //$NON-NLS-1$
+					method.setAccessible(true);
+					method.invoke(targetPart, Boolean.valueOf(state));
+				} catch (IllegalArgumentException | InvocationTargetException | IllegalAccessException | SecurityException | NoSuchMethodException ex) {
+					TextEditorPlugin.getDefault().getLog()
+							.log(Status.error("cannot (de-)activate actions for text editor", ex)); //$NON-NLS-1$
+				}
 			}
 
 		});
@@ -551,13 +589,13 @@ public class FindReplaceOverlay {
 	}
 
 	private void createMainContainer(final Composite parent) {
-		overlayControl = new FixColorComposite(parent, SWT.NONE, targetControl.getShell().getBackground());
+		overlayControl = new FixColorComposite(parent, SWT.NONE, overlayBackgroundColor);
 		GridLayoutFactory.fillDefaults().numColumns(2).equalWidth(false).margins(2, 2).spacing(2, 0).applyTo(overlayControl);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(overlayControl);
 
 		createReplaceToggle();
 
-		contentGroup = new FixColorComposite(overlayControl, SWT.NONE, targetControl.getShell().getBackground());
+		contentGroup = new FixColorComposite(overlayControl, SWT.NONE, overlayBackgroundColor);
 		GridLayoutFactory.fillDefaults().numColumns(1).equalWidth(false).spacing(2, 3).applyTo(contentGroup);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(contentGroup);
 	}

@@ -358,37 +358,18 @@ public class FindReplaceOverlay {
 			normalTextForegroundColor = textBarForRetrievingTheRightColor.getForeground();
 			textBarForRetrievingTheRightColor.dispose();
 		}
-		Control flatButton = new Button(targetControl.getShell(), SWT.FLAT | SWT.PUSH);
-		AtomicReference<Color> c = new AtomicReference<>();
+		AtomicReference<Color> colorReference = new AtomicReference<>();
 		Dialog dummy = new Dialog(targetControl.getShell()) {
-			Composite comp;
 			@Override
-			protected Control createContents(Composite parent) {
-				Control conte = super.createContents(parent);
-				comp = new Composite(parent, SWT.NONE);
-				setBlockOnOpen(false);
-				return conte;
+			public void create() {
+				super.create();
+				colorReference.set(getContents().getBackground());
 			}
-			@Override
-			public int open() {
-				int res = super.open();
-				c.set(comp.getBackground());
-				return res;
-			}
+
 		};
-		dummy.open();
+		dummy.create();
 		dummy.close();
-		System.out.println("is is: " + c.get());
-		dummy.close();
-		overlayBackgroundColor = flatButton.getDisplay().getSystemColor(SWT.COLOR_TEXT_DISABLED_BACKGROUND);
-		flatButton.dispose();
-		System.out.println(overlayBackgroundColor);
-		Composite textBarForRetrievingTheRightColor = new Composite(targetControl.getShell(), SWT.None);
-		targetControl.getShell().layout();
-		overlayBackgroundColor = textBarForRetrievingTheRightColor.getBackground();
-		normalTextForegroundColor = textBarForRetrievingTheRightColor.getForeground();
-		System.out.println("now: " + overlayBackgroundColor);
-		textBarForRetrievingTheRightColor.dispose();
+		overlayBackgroundColor = colorReference.get();
 	}
 
 

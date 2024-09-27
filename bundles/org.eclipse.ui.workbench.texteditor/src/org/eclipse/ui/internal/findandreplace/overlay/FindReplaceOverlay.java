@@ -18,6 +18,7 @@ import static org.eclipse.ui.internal.findandreplace.overlay.FindReplaceShortcut
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.osgi.framework.FrameworkUtil;
 
@@ -41,6 +42,7 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.ScrollBar;
 import org.eclipse.swt.widgets.Scrollable;
@@ -52,6 +54,7 @@ import org.eclipse.swt.widgets.Widget;
 import org.eclipse.core.runtime.Status;
 
 import org.eclipse.jface.bindings.keys.KeyStroke;
+import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -356,14 +359,35 @@ public class FindReplaceOverlay {
 			textBarForRetrievingTheRightColor.dispose();
 		}
 		Control flatButton = new Button(targetControl.getShell(), SWT.FLAT | SWT.PUSH);
-		overlayBackgroundColor = flatButton.getBackground();
+		AtomicReference<Color> c = new AtomicReference<>();
+		Dialog dummy = new Dialog(targetControl.getShell()) {
+			Composite comp;
+			@Override
+			protected Control createContents(Composite parent) {
+				Control conte = super.createContents(parent);
+				comp = new Composite(parent, SWT.NONE);
+				setBlockOnOpen(false);
+				return conte;
+			}
+			@Override
+			public int open() {
+				int res = super.open();
+				c.set(comp.getBackground());
+				return res;
+			}
+		};
+		dummy.open();
+		dummy.close();
+		System.out.println("is is: " + c.get());
+		dummy.close();
+		overlayBackgroundColor = flatButton.getDisplay().getSystemColor(SWT.COLOR_TEXT_DISABLED_BACKGROUND);
 		flatButton.dispose();
 		System.out.println(overlayBackgroundColor);
-		Text textBarForRetrievingTheRightColor = new Text(targetControl.getShell(), SWT.SINGLE | SWT.SEARCH);
+		Composite textBarForRetrievingTheRightColor = new Composite(targetControl.getShell(), SWT.None);
 		targetControl.getShell().layout();
 		overlayBackgroundColor = textBarForRetrievingTheRightColor.getBackground();
 		normalTextForegroundColor = textBarForRetrievingTheRightColor.getForeground();
-		System.out.println(overlayBackgroundColor);
+		System.out.println("now: " + overlayBackgroundColor);
 		textBarForRetrievingTheRightColor.dispose();
 	}
 
@@ -461,7 +485,7 @@ public class FindReplaceOverlay {
 	private void createReplaceTools() {
 		Color warningColor = JFaceColors.getErrorText(overlayControl.getShell().getDisplay());
 
-		replaceTools = new AccessibleToolBar(replaceContainer);
+		replaceTools = new AccessibleToolBar(replacer);
 
 		replaceTools.createToolItem(SWT.SEPARATOR);
 
@@ -578,25 +602,36 @@ public class FindReplaceOverlay {
 		GridLayoutFactory.fillDefaults().numColumns(1).applyTo(searchBarContainer);
 	}
 
+	private Composite replacer;
+
 	private void createReplaceContainer() {
 		replaceContainer = new FixColorComposite(contentGroup, SWT.NONE, widgetBackgroundColor);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(replaceContainer);
-		GridLayoutFactory.fillDefaults().margins(0, 1).numColumns(2).extendedMargins(4, 4, 3, 5).equalWidth(false)
-				.applyTo(replaceContainer);
-		replaceBarContainer = new Composite(replaceContainer, SWT.NONE);
+		GridLayoutFactory.fillDefaults().numColumns(1).equalWidth(false).margins(0, 0).applyTo(replaceContainer);
+
+		Label versep = new Label(replaceContainer, SWT.SEPARATOR | SWT.HORIZONTAL);
+		GridDataFactory.fillDefaults().grab(true, false).applyTo(versep);
+
+		replacer = new FixColorComposite(replaceContainer, SWT.NONE, widgetBackgroundColor);
+		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(replacer);
+		GridLayoutFactory.fillDefaults().margins(0, 0).numColumns(2).extendedMargins(4, 4, 3, 5).equalWidth(false)
+				.applyTo(replacer);
+
+		replaceBarContainer = new Composite(replacer, SWT.NONE);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.END).applyTo(replaceBarContainer);
 		GridLayoutFactory.fillDefaults().numColumns(1).equalWidth(false).applyTo(replaceBarContainer);
 	}
 
 	private void createMainContainer(final Composite parent) {
 		overlayControl = new FixColorComposite(parent, SWT.NONE, overlayBackgroundColor);
-		GridLayoutFactory.fillDefaults().numColumns(2).equalWidth(false).margins(2, 2).spacing(2, 0).applyTo(overlayControl);
+		GridLayoutFactory.fillDefaults().numColumns(2).equalWidth(false).margins(2, 2).spacing(2, 0)
+				.applyTo(overlayControl);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(overlayControl);
 
 		createReplaceToggle();
 
-		contentGroup = new FixColorComposite(overlayControl, SWT.NONE, overlayBackgroundColor);
-		GridLayoutFactory.fillDefaults().numColumns(1).equalWidth(false).spacing(2, 3).applyTo(contentGroup);
+		contentGroup = new Composite(overlayControl, SWT.NONE);
+		GridLayoutFactory.fillDefaults().numColumns(1).equalWidth(false).spacing(0, 1).applyTo(contentGroup);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(contentGroup);
 	}
 

@@ -25,7 +25,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Shell;
@@ -56,7 +55,7 @@ class OverlayAccess implements IFindReplaceUIAccess {
 
 	private final ToolItem searchBackward;
 
-	private final Button openReplaceDialog;
+	private final ToolItem openReplaceDialog;
 
 	private HistoryTextWrapper replace;
 
@@ -81,7 +80,7 @@ class OverlayAccess implements IFindReplaceUIAccess {
 		searchForward= (ToolItem) findReplaceOverlayAccessor.get("searchDownButton");
 		searchBackward= (ToolItem) findReplaceOverlayAccessor.get("searchUpButton");
 		closeOperation= () -> findReplaceOverlayAccessor.invoke("close", null);
-		openReplaceDialog= (Button) findReplaceOverlayAccessor.get("replaceToggle");
+		openReplaceDialog= (ToolItem) findReplaceOverlayAccessor.get("replaceToggle");
 		replaceButton= (ToolItem) findReplaceOverlayAccessor.get("replaceButton");
 		replaceAllButton= (ToolItem) findReplaceOverlayAccessor.get("replaceAllButton");
 		inSelection= (ToolItem) findReplaceOverlayAccessor.get("searchInSelectionButton");

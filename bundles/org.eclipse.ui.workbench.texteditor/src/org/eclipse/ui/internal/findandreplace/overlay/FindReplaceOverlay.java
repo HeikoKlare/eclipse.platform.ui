@@ -13,8 +13,6 @@
  *******************************************************************************/
 package org.eclipse.ui.internal.findandreplace.overlay;
 
-import static org.eclipse.ui.internal.findandreplace.overlay.FindReplaceShortcutUtil.registerActionShortcutsAtControl;
-
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -28,7 +26,6 @@ import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.KeyListener;
-import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.events.ShellAdapter;
 import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.graphics.Color;
@@ -37,7 +34,6 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGBA;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
@@ -117,8 +113,8 @@ public class FindReplaceOverlay extends Dialog {
 	private boolean replaceBarOpen;
 
 	private Composite container;
-	private Button replaceToggle;
-	private FindReplaceOverlayAction replaceToggleShortcut;
+	private AccessibleToolBar replaceToggleTools;
+	private ToolItem replaceToggle;
 
 	private Composite contentGroup;
 
@@ -474,7 +470,7 @@ public class FindReplaceOverlay extends Dialog {
 	private void initializeSearchShortcutHandlers() {
 		searchTools.registerActionShortcutsAtControl(searchBar);
 		closeTools.registerActionShortcutsAtControl(searchBar);
-		registerActionShortcutsAtControl(replaceToggleShortcut, searchBar);
+		replaceToggleTools.registerActionShortcutsAtControl(searchBar);
 	}
 
 	/**
@@ -701,7 +697,7 @@ public class FindReplaceOverlay extends Dialog {
 
 	private void createMainContainer(final Composite parent) {
 		container = new Composite(parent, SWT.NONE);
-		GridLayoutFactory.fillDefaults().numColumns(2).equalWidth(false).margins(2, 2).spacing(2, 0).applyTo(container);
+		GridLayoutFactory.fillDefaults().numColumns(2).equalWidth(false).margins(2, 2).spacing(0, 0).applyTo(container);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(container);
 
 		createReplaceToggle();
@@ -712,15 +708,15 @@ public class FindReplaceOverlay extends Dialog {
 	}
 
 	private void createReplaceToggle() {
-		replaceToggleShortcut = new FindReplaceOverlayAction(this::toggleReplace);
-		replaceToggleShortcut.addShortcuts(KeyboardShortcuts.TOGGLE_REPLACE);
-		replaceToggle = new Button(container, SWT.FLAT | SWT.PUSH);
-		GridDataFactory.fillDefaults().grab(false, true).align(GridData.BEGINNING, GridData.FILL)
-				.applyTo(replaceToggle);
-		replaceToggle.setToolTipText(replaceToggleShortcut
-				.addShortcutHintToTooltipText(FindReplaceMessages.FindReplaceOverlay_replaceToggle_toolTip));
-		replaceToggle.setImage(FindReplaceOverlayImages.get(FindReplaceOverlayImages.KEY_OPEN_REPLACE_AREA));
-		replaceToggle.addSelectionListener(SelectionListener.widgetSelectedAdapter(e -> toggleReplace()));
+		replaceToggleTools = new AccessibleToolBar(container);
+		GridDataFactory.fillDefaults().grab(false, true).align(GridData.CENTER, GridData.CENTER)
+				.applyTo(replaceToggleTools);
+
+		replaceToggle = new AccessibleToolItemBuilder(replaceToggleTools)
+				.withShortcuts(KeyboardShortcuts.TOGGLE_REPLACE)
+				.withImage(FindReplaceOverlayImages.get(FindReplaceOverlayImages.KEY_OPEN_REPLACE_AREA))
+				.withToolTipText(FindReplaceMessages.FindReplaceOverlay_replaceToggle_toolTip)
+				.withOperation(this::toggleReplace).build();
 	}
 
 	private void toggleReplace() {
@@ -765,7 +761,7 @@ public class FindReplaceOverlay extends Dialog {
 	private void initializeReplaceShortcutHandlers() {
 		replaceTools.registerActionShortcutsAtControl(replaceBar);
 		closeTools.registerActionShortcutsAtControl(replaceBar);
-		registerActionShortcutsAtControl(replaceToggleShortcut, replaceBar);
+		replaceToggleTools.registerActionShortcutsAtControl(replaceBar);
 	}
 
 	private void enableSearchTools(boolean enable) {
@@ -778,8 +774,8 @@ public class FindReplaceOverlay extends Dialog {
 			return;
 		}
 		boolean visible = enable && findReplaceLogic.getTarget().isEditable();
-		((GridData) replaceToggle.getLayoutData()).exclude = !visible;
-		replaceToggle.setVisible(visible);
+		((GridData) replaceToggleTools.getLayoutData()).exclude = !visible;
+		replaceToggleTools.setVisible(visible);
 	}
 
 	private void enableReplaceTools(boolean enable) {

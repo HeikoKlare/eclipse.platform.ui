@@ -42,7 +42,6 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.ScrollBar;
 import org.eclipse.swt.widgets.Scrollable;
@@ -149,10 +148,10 @@ public class FindReplaceOverlay {
 	private boolean positionAtTop = true;
 	private ContentAssistCommandAdapter contentAssistSearchField, contentAssistReplaceField;
 
-	private class FixColorComposite extends Composite {
+	private class FixedColorComposite extends Composite {
 		private Color fixColor;
 
-		public FixColorComposite(Composite parent, int style, Color fixColor) {
+		public FixedColorComposite(Composite parent, int style, Color fixColor) {
 			super(parent, style);
 			this.fixColor = fixColor;
 			setBackground(fixColor);
@@ -324,11 +323,6 @@ public class FindReplaceOverlay {
 		}
 		retrieveBackgroundColor();
 		createMainContainer(parent);
-
-		createFindContainer();
-		createSearchBar();
-		createSearchTools();
-		createCloseTools();
 		initializeSearchShortcutHandlers();
 
 		overlayControl.layout();
@@ -342,9 +336,9 @@ public class FindReplaceOverlay {
 
 	/**
 	 * HACK: In order to not introduce a hard-coded color, we need to retrieve the
-	 * color of the "SWT.SEARCH"-Text. Since that search-bar has a border, we don't
-	 * want to have it in our own form. Instead, we create such a bar at start-up,
-	 * grab it's color and then immediately dispose of that bar.
+	 * background color of text widgets and composite to color those widgets that
+	 * would otherwise inherit unfitting custom colors from the containing
+	 * StyledText.
 	 */
 	private void retrieveBackgroundColor() {
 		if (targetPart instanceof StatusTextEditor textEditor) {
@@ -358,8 +352,12 @@ public class FindReplaceOverlay {
 			normalTextForegroundColor = textBarForRetrievingTheRightColor.getForeground();
 			textBarForRetrievingTheRightColor.dispose();
 		}
+		overlayBackgroundColor = retrieveDefaultCompositeBackground();
+	}
+
+	private Color retrieveDefaultCompositeBackground() {
 		AtomicReference<Color> colorReference = new AtomicReference<>();
-		Dialog dummy = new Dialog(targetControl.getShell()) {
+		Dialog dummyDialogForColorRetrieval = new Dialog(targetControl.getShell()) {
 			@Override
 			public void create() {
 				super.create();
@@ -367,11 +365,41 @@ public class FindReplaceOverlay {
 			}
 
 		};
-		dummy.create();
-		dummy.close();
-		overlayBackgroundColor = colorReference.get();
+		dummyDialogForColorRetrieval.create();
+		dummyDialogForColorRetrieval.close();
+		return colorReference.get();
 	}
 
+	private void createMainContainer(final Composite parent) {
+		overlayControl = new FixedColorComposite(parent, SWT.NONE, overlayBackgroundColor);
+		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(overlayControl);
+		GridLayoutFactory.fillDefaults().numColumns(2).equalWidth(false).margins(2, 2).spacing(2, 0)
+				.applyTo(overlayControl);
+
+		createReplaceToggle();
+		createContentsContainer();
+	}
+
+	private void createReplaceToggle() {
+		replaceToggleShortcut = new FindReplaceOverlayAction(() -> setReplaceVisible(!replaceBarOpen));
+		replaceToggleShortcut.addShortcuts(KeyboardShortcuts.TOGGLE_REPLACE);
+		replaceToggle = new Button(overlayControl, SWT.FLAT | SWT.PUSH);
+		GridDataFactory.fillDefaults().grab(false, true).align(GridData.BEGINNING, GridData.FILL)
+				.applyTo(replaceToggle);
+		replaceToggle.setToolTipText(replaceToggleShortcut
+				.addShortcutHintToTooltipText(FindReplaceMessages.FindReplaceOverlay_replaceToggle_toolTip));
+		replaceToggle.setImage(FindReplaceOverlayImages.get(FindReplaceOverlayImages.KEY_OPEN_REPLACE_AREA));
+		replaceToggle
+				.addSelectionListener(SelectionListener.widgetSelectedAdapter(e -> setReplaceVisible(!replaceBarOpen)));
+	}
+
+	private void createContentsContainer() {
+		contentGroup = new FixedColorComposite(overlayControl, SWT.NONE, overlayBackgroundColor);
+		GridLayoutFactory.fillDefaults().numColumns(1).equalWidth(false).spacing(0, 2).applyTo(contentGroup);
+		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(contentGroup);
+
+		createSearchContainer();
+	}
 
 	private void createSearchTools() {
 		searchTools = new AccessibleToolBar(searchContainer);
@@ -466,7 +494,7 @@ public class FindReplaceOverlay {
 	private void createReplaceTools() {
 		Color warningColor = JFaceColors.getErrorText(overlayControl.getShell().getDisplay());
 
-		replaceTools = new AccessibleToolBar(replacer);
+		replaceTools = new AccessibleToolBar(replaceContainer);
 
 		replaceTools.createToolItem(SWT.SEPARATOR);
 
@@ -573,60 +601,29 @@ public class FindReplaceOverlay {
 		contentAssistReplaceField = createContentAssistField(replaceBar, false);
 	}
 
-	private void createFindContainer() {
-		searchContainer = new FixColorComposite(contentGroup, SWT.NONE, widgetBackgroundColor);
+	private void createSearchContainer() {
+		searchContainer = new FixedColorComposite(contentGroup, SWT.NONE, widgetBackgroundColor);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(searchContainer);
 		GridLayoutFactory.fillDefaults().numColumns(3).extendedMargins(4, 4, 3, 5).equalWidth(false)
 				.applyTo(searchContainer);
 		searchBarContainer = new Composite(searchContainer, SWT.NONE);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(searchBarContainer);
 		GridLayoutFactory.fillDefaults().numColumns(1).applyTo(searchBarContainer);
-	}
 
-	private Composite replacer;
+		createSearchBar();
+		createSearchTools();
+		createCloseTools();
+	}
 
 	private void createReplaceContainer() {
-		replaceContainer = new FixColorComposite(contentGroup, SWT.NONE, widgetBackgroundColor);
+		replaceContainer = new FixedColorComposite(contentGroup, SWT.NONE, widgetBackgroundColor);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(replaceContainer);
-		GridLayoutFactory.fillDefaults().numColumns(1).equalWidth(false).margins(0, 0).applyTo(replaceContainer);
-
-		Label versep = new Label(replaceContainer, SWT.SEPARATOR | SWT.HORIZONTAL);
-		GridDataFactory.fillDefaults().grab(true, false).applyTo(versep);
-
-		replacer = new FixColorComposite(replaceContainer, SWT.NONE, widgetBackgroundColor);
-		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(replacer);
 		GridLayoutFactory.fillDefaults().margins(0, 0).numColumns(2).extendedMargins(4, 4, 3, 5).equalWidth(false)
-				.applyTo(replacer);
+				.applyTo(replaceContainer);
 
-		replaceBarContainer = new Composite(replacer, SWT.NONE);
+		replaceBarContainer = new FixedColorComposite(replaceContainer, SWT.NONE, widgetBackgroundColor);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.END).applyTo(replaceBarContainer);
 		GridLayoutFactory.fillDefaults().numColumns(1).equalWidth(false).applyTo(replaceBarContainer);
-	}
-
-	private void createMainContainer(final Composite parent) {
-		overlayControl = new FixColorComposite(parent, SWT.NONE, overlayBackgroundColor);
-		GridLayoutFactory.fillDefaults().numColumns(2).equalWidth(false).margins(2, 2).spacing(2, 0)
-				.applyTo(overlayControl);
-		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(overlayControl);
-
-		createReplaceToggle();
-
-		contentGroup = new Composite(overlayControl, SWT.NONE);
-		GridLayoutFactory.fillDefaults().numColumns(1).equalWidth(false).spacing(0, 1).applyTo(contentGroup);
-		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(contentGroup);
-	}
-
-	private void createReplaceToggle() {
-		replaceToggleShortcut = new FindReplaceOverlayAction(() -> setReplaceVisible(!replaceBarOpen));
-		replaceToggleShortcut.addShortcuts(KeyboardShortcuts.TOGGLE_REPLACE);
-		replaceToggle = new Button(overlayControl, SWT.FLAT | SWT.PUSH);
-		GridDataFactory.fillDefaults().grab(false, true).align(GridData.BEGINNING, GridData.FILL)
-				.applyTo(replaceToggle);
-		replaceToggle.setToolTipText(replaceToggleShortcut
-				.addShortcutHintToTooltipText(FindReplaceMessages.FindReplaceOverlay_replaceToggle_toolTip));
-		replaceToggle.setImage(FindReplaceOverlayImages.get(FindReplaceOverlayImages.KEY_OPEN_REPLACE_AREA));
-		replaceToggle.addSelectionListener(
-				SelectionListener.widgetSelectedAdapter(e -> setReplaceVisible(!replaceBarOpen)));
 	}
 
 	private void setReplaceVisible(boolean visible) {

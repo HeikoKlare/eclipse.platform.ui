@@ -314,15 +314,20 @@ public class FindReplaceOverlay {
 		}
 		retrieveBackgroundColor();
 		createMainContainer(parent);
-		initializeSearchShortcutHandlers();
+		initializeShortcutHandlers();
+		setReplaceVisible(false);
 
 		containerControl.layout();
 	}
 
-	private void initializeSearchShortcutHandlers() {
+	private void initializeShortcutHandlers() {
 		searchTools.registerActionShortcutsAtControl(searchBar);
 		closeTools.registerActionShortcutsAtControl(searchBar);
 		replaceToggleTools.registerActionShortcutsAtControl(searchBar);
+
+		replaceTools.registerActionShortcutsAtControl(replaceBar);
+		closeTools.registerActionShortcutsAtControl(replaceBar);
+		replaceToggleTools.registerActionShortcutsAtControl(replaceBar);
 	}
 
 	/**
@@ -409,6 +414,7 @@ public class FindReplaceOverlay {
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(contentGroup);
 
 		createSearchContainer();
+		createReplaceContainer();
 	}
 
 	private void createSearchTools() {
@@ -647,7 +653,7 @@ public class FindReplaceOverlay {
 
 	private void setReplaceVisible(boolean visible) {
 		if (findReplaceLogic.getTarget().isEditable() && visible) {
-			createReplaceDialog();
+			showReplace();
 			replaceToggle.setImage(FindReplaceOverlayImages.get(FindReplaceOverlayImages.KEY_CLOSE_REPLACE_AREA));
 		} else {
 			hideReplace();
@@ -661,29 +667,21 @@ public class FindReplaceOverlay {
 			return;
 		}
 		searchBar.forceFocus();
-		contentAssistReplaceField = null;
 		replaceBarOpen = false;
-		replaceContainer.dispose();
+		((GridData) replaceContainer.getLayoutData()).exclude = true;
+		replaceContainer.setVisible(false);
 		updatePlacementAndVisibility();
 	}
 
-	private void createReplaceDialog() {
+	private void showReplace() {
 		if (replaceBarOpen) {
 			return;
 		}
 		replaceBarOpen = true;
-		createReplaceContainer();
-		initializeReplaceShortcutHandlers();
-
+		((GridData) replaceContainer.getLayoutData()).exclude = false;
+		replaceContainer.setVisible(true);
 		updatePlacementAndVisibility();
-		assignIDs();
 		replaceBar.forceFocus();
-	}
-
-	private void initializeReplaceShortcutHandlers() {
-		replaceTools.registerActionShortcutsAtControl(replaceBar);
-		closeTools.registerActionShortcutsAtControl(replaceBar);
-		replaceToggleTools.registerActionShortcutsAtControl(replaceBar);
 	}
 
 	private void enableSearchTools(boolean enable) {

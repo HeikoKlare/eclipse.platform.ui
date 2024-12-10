@@ -685,7 +685,6 @@ public final class Workbench extends EventManager implements IWorkbench, org.ecl
 				.getBoolean(IWorkbenchPreferenceConstants.RESCALING_AT_RUNTIME);
 		if (rescaleAtRuntime) {
 			display.setRescalingAtRuntime(rescaleAtRuntime);
-			System.setProperty("org.eclipse.swt.browser.DefaultType", "edge"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 	}
 

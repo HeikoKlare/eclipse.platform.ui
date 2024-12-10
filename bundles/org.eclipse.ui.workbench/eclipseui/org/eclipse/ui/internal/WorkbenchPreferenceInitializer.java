@@ -33,6 +33,7 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.swt.SWT;
 import org.eclipse.ui.IWorkbenchPreferenceConstants;
+import org.eclipse.ui.internal.util.PrefUtil;
 import org.osgi.service.prefs.BackingStoreException;
 
 /**
@@ -149,6 +150,9 @@ public class WorkbenchPreferenceInitializer extends AbstractPreferenceInitialize
 		}
 
 		LargeFileLimitsPreferenceHandler.setDefaults();
+
+		// Monitor-specific UI scaling (Windows only)
+		PrefUtil.getAPIPreferenceStore().setDefault(IWorkbenchPreferenceConstants.RESCALING_AT_RUNTIME, true);
 	}
 
 }

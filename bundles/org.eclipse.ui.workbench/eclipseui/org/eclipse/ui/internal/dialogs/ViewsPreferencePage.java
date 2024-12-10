@@ -373,7 +373,7 @@ public class ViewsPreferencePage extends PreferencePage implements IWorkbenchPre
 
 		boolean isRescaleAtRuntimeChanged = false;
 		if (rescaleAtRuntime != null) {
-			boolean initialStateRescaleAtRuntime = PrefUtil.getAPIPreferenceStore()
+			boolean initialStateRescaleAtRuntime = apiStore
 					.getBoolean(IWorkbenchPreferenceConstants.RESCALING_AT_RUNTIME);
 			isRescaleAtRuntimeChanged = initialStateRescaleAtRuntime != rescaleAtRuntime.getSelection();
 			apiStore.setValue(IWorkbenchPreferenceConstants.RESCALING_AT_RUNTIME, rescaleAtRuntime.getSelection());

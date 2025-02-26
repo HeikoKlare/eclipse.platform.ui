@@ -610,7 +610,7 @@ public class FindReplaceOverlay {
 	}
 
 	private void createSearchBar() {
-		Composite searchBarContainer = new Composite(searchContainer, SWT.NONE);
+		Composite searchBarContainer = new FixedColorComposite(searchContainer, SWT.NONE, widgetBackgroundColor);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(searchBarContainer);
 		GridLayoutFactory.fillDefaults().numColumns(1).applyTo(searchBarContainer);
 		HistoryStore searchHistory = new HistoryStore(getDialogSettings(), "findhistory", //$NON-NLS-1$
@@ -647,7 +647,7 @@ public class FindReplaceOverlay {
 	}
 
 	private void createReplaceBar() {
-		Composite replaceBarContainer = new Composite(replaceContainer, SWT.NONE);
+		Composite replaceBarContainer = new FixedColorComposite(replaceContainer, SWT.NONE, widgetBackgroundColor);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.END).applyTo(replaceBarContainer);
 		GridLayoutFactory.fillDefaults().numColumns(1).equalWidth(false).applyTo(replaceBarContainer);
 

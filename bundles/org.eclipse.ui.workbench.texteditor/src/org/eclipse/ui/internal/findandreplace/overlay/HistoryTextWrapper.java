@@ -51,6 +51,7 @@ public class HistoryTextWrapper extends Composite {
 	public HistoryTextWrapper(HistoryStore history, Composite parent, int style) {
 		super(parent, SWT.NONE);
 		GridLayoutFactory.fillDefaults().numColumns(2).applyTo(this);
+		setBackgroundMode(SWT.INHERIT_FORCE);
 
 		this.history = history;
 

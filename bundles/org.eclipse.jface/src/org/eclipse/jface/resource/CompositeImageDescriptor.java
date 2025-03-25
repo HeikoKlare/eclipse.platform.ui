@@ -24,6 +24,7 @@ import org.eclipse.swt.graphics.ImageDataProvider;
 import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.widgets.Display;
 
 /**
  * Abstract base class for image descriptors that synthesize an image from other
@@ -440,26 +441,20 @@ public abstract class CompositeImageDescriptor extends ImageDescriptor {
 	 * Returns whether the given zoom level is supported by this
 	 * CompositeImageDescriptor.
 	 *
-	 * @param zoom
-	 *            the zoom level
+	 * @param zoom the zoom level
 	 * @return whether the given zoom level is supported. Must return true for
 	 *         {@code zoom == 100}.
 	 * @since 3.13
 	 */
 	protected boolean supportsZoomLevel(int zoom) {
-		// Currently only support integer zoom levels, because getZoomedImageData(..)
-		// suffers from Bug 97506: [HiDPI] ImageData.scaledTo() should use a
-		// better interpolation method.
-		return zoom > 0 && zoom % 100 == 0;
+		return true;
 	}
 
 	private ImageData getZoomedImageData(ImageDataProvider srcProvider) {
-		ImageData src = srcProvider.getImageData(compositeZoom);
-		if (src == null) {
-			ImageData src100 = srcProvider.getImageData(100);
-			src = src100.scaledTo(autoScaleUp(src100.width), autoScaleUp(src100.height));
-		}
-		return src;
+		Image tempImage = new Image(Display.getCurrent(), srcProvider);
+		ImageData result = tempImage.getImageData(compositeZoom);
+		tempImage.dispose();
+		return result;
 	}
 
 	/**

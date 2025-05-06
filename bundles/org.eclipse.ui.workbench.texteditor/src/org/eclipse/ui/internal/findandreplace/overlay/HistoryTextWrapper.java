@@ -55,7 +55,7 @@ public class HistoryTextWrapper extends Composite {
 		this.history = history;
 
 		textBar = new Text(this, style);
-		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.CENTER).applyTo(textBar);
+		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(textBar);
 		tools = new AccessibleToolBar(this);
 		dropDown = new AccessibleToolItemBuilder(tools).withStyleBits(SWT.PUSH)
 				.withToolTipText(FindReplaceMessages.FindReplaceOverlay_searchHistory_toolTip)

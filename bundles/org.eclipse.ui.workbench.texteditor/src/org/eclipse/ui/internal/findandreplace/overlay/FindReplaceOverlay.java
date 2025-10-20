@@ -227,6 +227,7 @@ public class FindReplaceOverlay {
 			if (e.detail == SWT.TRAVERSE_TAB_NEXT) {
 				e.doit = false;
 				replaceBar.forceFocus();
+				containerControl.layout(true, true);
 			}
 		};
 
@@ -407,9 +408,9 @@ public class FindReplaceOverlay {
 			containerControl.setVisible(true);
 			bindListeners();
 			restoreOverlaySettings();
+			assignIDs();
 		}
-		assignIDs();
-		containerControl.layout();
+		containerControl.layout(true, true);
 		containerControl.moveAbove(null);
 		updatePlacementAndVisibility();
 		updateContentAssistAvailability();
@@ -700,8 +701,6 @@ public class FindReplaceOverlay {
 		searchBar = new HistoryTextWrapper(searchHistory, searchBarContainer, SWT.SINGLE);
 		searchBarDecoration = new ControlDecoration(searchBar, SWT.BOTTOM | SWT.LEFT);
 		GridDataFactory.fillDefaults().grab(true, true).align(GridData.FILL, GridData.FILL).applyTo(searchBar);
-		searchBar.forceFocus();
-		searchBar.selectAll();
 		searchBar.addModifyListener(e -> {
 			wholeWordSearchButton.setEnabled(findReplaceLogic.isAvailable(SearchOptions.WHOLE_WORD));
 			updateIncrementalSearch();
@@ -801,6 +800,7 @@ public class FindReplaceOverlay {
 		updatePlacementAndVisibility();
 		assignIDs();
 		replaceBar.forceFocus();
+		containerControl.layout(true, true);
 		customFocusOrder.apply();
 	}
 
@@ -900,12 +900,12 @@ public class FindReplaceOverlay {
 			return;
 		}
 
-		containerControl.requestLayout();
 		Rectangle targetControlBounds = calculateControlBounds(targetControl);
 		Rectangle overlayBounds = calculateDesiredOverlayBounds(targetControlBounds);
 		updatePosition(overlayBounds);
 		configureDisplayedWidgetsForWidth(overlayBounds.width);
 		updateVisibility(targetControlBounds, overlayBounds);
+		containerControl.layout(true, true);
 
 		repositionTextSelection();
 	}
@@ -952,7 +952,6 @@ public class FindReplaceOverlay {
 	private void updatePosition(Rectangle overlayBounds) {
 		containerControl.setSize(new Point(overlayBounds.width, overlayBounds.height));
 		containerControl.setLocation(new Point(overlayBounds.x, overlayBounds.y));
-		containerControl.layout(true);
 	}
 
 	private void updateVisibility(Rectangle targetControlBounds, Rectangle overlayBounds) {

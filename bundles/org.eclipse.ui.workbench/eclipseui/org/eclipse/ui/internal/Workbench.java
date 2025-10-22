@@ -1784,6 +1784,9 @@ public final class Workbench extends EventManager implements IWorkbench, org.ecl
 		// configure use of color icons in toolbars
 		boolean useColorIcons = PrefUtil.getInternalPreferenceStore().getBoolean(IPreferenceConstants.COLOR_ICONS);
 		ActionContributionItem.setUseColorIconsInToolbars(useColorIcons);
+		boolean ignoreDisabledIcons = PrefUtil.getInternalPreferenceStore()
+				.getBoolean(IWorkbenchPreferenceConstants.IGNORE_DISABLED_ICONS);
+		ActionContributionItem.setIgnoreDisabledIcons(ignoreDisabledIcons);
 
 		// initialize workbench single-click vs double-click behavior
 		initializeSingleClickOption();

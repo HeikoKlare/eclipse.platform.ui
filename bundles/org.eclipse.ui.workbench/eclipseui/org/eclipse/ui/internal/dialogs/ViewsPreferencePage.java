@@ -117,6 +117,7 @@ public class ViewsPreferencePage extends PreferencePage implements IWorkbenchPre
 
 	private Button themingEnabled;
 	private Button rescaleAtRuntime;
+	private Button ignoreDisabledIcons;
 
 	private Button hideIconsForViewTabs;
 	private Button showFullTextForViewTabs;
@@ -144,6 +145,7 @@ public class ViewsPreferencePage extends PreferencePage implements IWorkbenchPre
 			layout.horizontalSpacing = 10;
 			comp.setLayout(layout);
 			createThemeIndependentComposits(comp);
+			createDisabledIconsButtons(comp);
 			createRescaleAtRuntimeCheckButton(comp);
 			return comp;
 		}
@@ -199,6 +201,7 @@ public class ViewsPreferencePage extends PreferencePage implements IWorkbenchPre
 		createShowFullTextForViewTabs(comp);
 		createHideIconsForViewTabs(comp);
 		createDependency(showFullTextForViewTabs, hideIconsForViewTabs);
+		createDisabledIconsButtons(comp);
 
 		createShowDirtyIndicatorForTabs(comp);
 
@@ -251,6 +254,16 @@ public class ViewsPreferencePage extends PreferencePage implements IWorkbenchPre
 		} else {
 			rescaleAtRuntime.setToolTipText(WorkbenchMessages.RescaleAtRuntimeDescription);
 		}
+	}
+
+	private void createDisabledIconsButtons(Composite parent) {
+		createLabel(parent, ""); //$NON-NLS-1$
+
+		boolean initialStateIgnoreDisabledIcons = ConfigurationScope.INSTANCE.getNode(WorkbenchPlugin.PI_WORKBENCH)
+				.getBoolean(IWorkbenchPreferenceConstants.IGNORE_DISABLED_ICONS, true);
+		ignoreDisabledIcons = createCheckButton(parent, WorkbenchMessages.IgnoreDisabledIconsEnabled,
+				initialStateIgnoreDisabledIcons);
+		ignoreDisabledIcons.setToolTipText(WorkbenchMessages.IgnoreDisabledIconsDescription);
 	}
 
 	private void createThemeIndependentComposits(Composite comp) {
@@ -499,6 +512,8 @@ public class ViewsPreferencePage extends PreferencePage implements IWorkbenchPre
 			}
 		}
 
+		PrefUtil.getInternalPreferenceStore().setValue(IWorkbenchPreferenceConstants.IGNORE_DISABLED_ICONS,
+				ignoreDisabledIcons.getSelection());
 		try {
 			prefs.flush();
 		} catch (BackingStoreException e) {
@@ -626,6 +641,11 @@ public class ViewsPreferencePage extends PreferencePage implements IWorkbenchPre
 		useColoredLabels.setSelection(apiStore.getDefaultBoolean(IWorkbenchPreferenceConstants.USE_COLORED_LABELS));
 
 		enableMru.setSelection(defaultPrefs.getBoolean(StackRenderer.MRU_KEY_DEFAULT, StackRenderer.MRU_DEFAULT));
+
+		if (rescaleAtRuntime != null) {
+			rescaleAtRuntime.setSelection(true);
+		}
+		// TODO Set default for new options
 		super.performDefaults();
 	}
 

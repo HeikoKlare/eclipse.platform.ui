@@ -75,6 +75,8 @@ public class ActionContributionItem extends ContributionItem {
 
 	private static boolean USE_COLOR_ICONS = true;
 
+	private static boolean IGNORE_DISABLED_ICONS = false;
+
 	/**
 	 * Returns whether color icons should be used in toolbars.
 	 *
@@ -88,12 +90,36 @@ public class ActionContributionItem extends ContributionItem {
 	/**
 	 * Sets whether color icons should be used in toolbars.
 	 *
-	 * @param useColorIcons
-	 *            <code>true</code> if color icons should be used in toolbars,
-	 *            <code>false</code> otherwise
+	 * @param useColorIcons <code>true</code> if color icons should be used in
+	 *                      toolbars, <code>false</code> otherwise
 	 */
 	public static void setUseColorIconsInToolbars(boolean useColorIcons) {
 		USE_COLOR_ICONS = useColorIcons;
+	}
+
+	/**
+	 * Returns whether explicitly defined disabled icons should be ignored, such
+	 * that all disabled icons are generated on-the-fly.
+	 *
+	 * @return <code>true</code> if disabled icons set to tool items should be
+	 *         ignored, <code>false</code> otherwise
+	 * @since 3.40
+	 */
+	public static boolean getIgnoreDisabledIcons() {
+		return IGNORE_DISABLED_ICONS;
+	}
+
+	/**
+	 * Sets whether explicitly defined disabled icons should be ignored, such that
+	 * all disabled icons are generated on-the-fly.
+	 *
+	 * @param ignoreDisabledIcons <code>true</code> if disabled icons set to tool
+	 *                            items should be ignored, <code>false</code>
+	 *                            otherwise
+	 * @since 3.40
+	 */
+	public static void setIgnoreDisabledIcons(boolean ignoreDisabledIcons) {
+		IGNORE_DISABLED_ICONS = ignoreDisabledIcons;
 	}
 
 	/**
@@ -988,7 +1014,10 @@ public class ActionContributionItem extends ContributionItem {
 		if (widget instanceof ToolItem) {
 			ImageDescriptor image = action.getImageDescriptor();
 			ImageDescriptor hoverImage = action.getHoverImageDescriptor();
-			ImageDescriptor disabledImage = action.getDisabledImageDescriptor();
+			ImageDescriptor disabledImage = null;
+			if (getIgnoreDisabledIcons()) {
+				disabledImage = action.getDisabledImageDescriptor();
+			}
 			// Make sure there is a valid image in case images are forced.
 			if (image == null && forceImage) {
 				image = ImageDescriptor.getMissingImageDescriptor();

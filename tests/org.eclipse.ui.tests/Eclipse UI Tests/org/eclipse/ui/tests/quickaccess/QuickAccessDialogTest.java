@@ -22,6 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
+import java.io.PrintStream;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -51,6 +55,7 @@ import org.eclipse.ui.tests.harness.util.CloseTestWindowsExtension;
 import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -63,8 +68,33 @@ public class QuickAccessDialogTest {
 
 	private class TestQuickAccessDialog extends QuickAccessDialog {
 
+		public static boolean LOG_TRACE = false;
+
 		public TestQuickAccessDialog(IWorkbenchWindow activeWorkbenchWindow, Command command) {
 			super(activeWorkbenchWindow, command);
+		}
+
+		@Override
+		public boolean close() {
+			if (LOG_TRACE) {
+				dumpStackTraces(System.out);
+			}
+			return super.close();
+		}
+
+		private Thread dumpStackTraces(PrintStream stream) {
+			ThreadMXBean threadStuff = ManagementFactory.getThreadMXBean();
+			ThreadInfo[] allThreads = threadStuff.dumpAllThreads(true, true, 200);
+			for (ThreadInfo threadInfo : allThreads) {
+				stream.print(threadInfo);
+			}
+			for (Thread t : Thread.getAllStackTraces().keySet()) {
+				String name = t.getName();
+				if ("main".equals(name)) {
+					return t;
+				}
+			}
+			return null;
 		}
 
 		@Override
@@ -291,8 +321,9 @@ public class QuickAccessDialogTest {
 		processEventsUntil(() -> enterPressed.widget.isDisposed(), 500);
 	}
 
-	@Test
+	@RepeatedTest(500)
 	public void testPreviousChoicesAvailableForExtension() {
+		TestQuickAccessDialog.LOG_TRACE = true;
 		// add one selection to history
 		QuickAccessDialog dialog = new TestQuickAccessDialog(activeWorkbenchWindow, null);
 		dialog.open();
@@ -303,14 +334,17 @@ public class QuickAccessDialogTest {
 				() -> dialogContains(dialog, TestQuickAccessComputer.TEST_QUICK_ACCESS_PROPOSAL_LABEL)),
 				"Unexpected dialog contents: " + getAllEntries(dialog.getQuickAccessContents().getTable()));
 		firstTable.select(0);
+		TestQuickAccessDialog.LOG_TRACE = false;
 		activateCurrentElement(dialog);
 		// then try in a new SearchField
+		TestQuickAccessDialog.LOG_TRACE = true;
 		QuickAccessDialog secondDialog = new TestQuickAccessDialog(activeWorkbenchWindow, null);
 		secondDialog.open();
 		assertTrue(DisplayHelper.waitForCondition(secondDialog.getShell().getDisplay(), TIMEOUT,
 						() -> getAllEntries(secondDialog.getQuickAccessContents().getTable()).stream()
 								.anyMatch(TestQuickAccessComputer::isContributedItem)),
 				"Contributed item not found in previous choices");
+		TestQuickAccessDialog.LOG_TRACE = false;
 	}
 
 	@Test

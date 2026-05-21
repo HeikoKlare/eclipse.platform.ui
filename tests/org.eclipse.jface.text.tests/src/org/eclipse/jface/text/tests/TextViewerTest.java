@@ -112,6 +112,7 @@ public class TextViewerTest {
 		assertEquals(0, textViewer.getSelectedRange().x);
 		assertEquals(len, textViewer.getSelectedRange().y);
 		assertEquals(0, textViewer.getTextWidget().getCaretOffset());
+		fail();
 	}
 
 	@Test

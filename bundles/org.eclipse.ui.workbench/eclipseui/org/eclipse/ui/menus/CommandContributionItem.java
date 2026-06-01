@@ -186,6 +186,7 @@ public class CommandContributionItem extends ContributionItem {
 	 *                               contribution item.
 	 * @since 3.4
 	 */
+	@SuppressWarnings("removal")
 	public CommandContributionItem(CommandContributionItemParameter contributionParameters) {
 		super(contributionParameters.id);
 
@@ -273,12 +274,16 @@ public class CommandContributionItem extends ContributionItem {
 				hoverIcon, label, mnemonic, tooltip, style, null, false));
 	}
 
+	@SuppressWarnings("removal")
 	private void setImages(IServiceLocator locator, String iconStyle) {
 		if (icon == null) {
 			ICommandImageService service = locator.getService(ICommandImageService.class);
 			icon = service.getImageDescriptor(command.getId(), ICommandImageService.TYPE_DEFAULT, iconStyle);
-			disabledIcon = service.getImageDescriptor(command.getId(), ICommandImageService.TYPE_DISABLED, iconStyle);
-			hoverIcon = service.getImageDescriptor(command.getId(), ICommandImageService.TYPE_HOVER, iconStyle);
+			if (ActionContributionItem.getUseDisabledIcons()) {
+				disabledIcon = service.getImageDescriptor(command.getId(), ICommandImageService.TYPE_DISABLED,
+						iconStyle);
+				hoverIcon = service.getImageDescriptor(command.getId(), ICommandImageService.TYPE_HOVER, iconStyle);
+			}
 
 			if (contributedIcon == null) {
 				contributedIcon = icon;
@@ -928,13 +933,17 @@ public class CommandContributionItem extends ContributionItem {
 	}
 
 	private void setDisabledIcon(ImageDescriptor desc) {
-		disabledIcon = desc;
-		updateIcons();
+		if (ActionContributionItem.getUseDisabledIcons()) {
+			disabledIcon = desc;
+			updateIcons();
+		}
 	}
 
 	private void setHoverIcon(ImageDescriptor desc) {
-		hoverIcon = desc;
-		updateIcons();
+		if (ActionContributionItem.getUseDisabledIcons()) {
+			hoverIcon = desc;
+			updateIcons();
+		}
 	}
 
 	@Override

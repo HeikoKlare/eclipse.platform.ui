@@ -699,7 +699,7 @@ If omitted and the action appears in the toolbar, the Workbench will use a place
                   a relative path of an icon used to visually represent the action in its context when the action is disabled. If omitted, the normal icon will simply appear greyed out. The path is relative to the location of the plugin.xml file of the contributing plug-in. The disabled icon will appear in toolbars but not in menus. Icons for disabled actions in menus will be supplied by the OS.
                </documentation>
                <appInfo>
-                  <meta.attribute kind="resource"/>
+                  <meta.attribute kind="resource" deprecated="true"/>
                </appInfo>
             </annotation>
          </attribute>
@@ -709,7 +709,7 @@ If omitted and the action appears in the toolbar, the Workbench will use a place
                   a relative path of an icon used to visually represent the action in its context when the mouse pointer is over the action. If omitted, the normal icon will be used. The path is relative to the location of the plugin.xml file of the contributing plug-in.
                </documentation>
                <appInfo>
-                  <meta.attribute kind="resource"/>
+                  <meta.attribute kind="resource" deprecated="true"/>
                </appInfo>
             </annotation>
          </attribute>

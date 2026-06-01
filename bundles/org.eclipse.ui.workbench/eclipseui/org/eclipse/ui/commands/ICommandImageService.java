@@ -56,13 +56,19 @@ public interface ICommandImageService extends IDisposable {
 
 	/**
 	 * The type of image to display if the corresponding command is disabled.
+	 *
+	 * @deprecated disabled icons are generated on the fly
 	 */
+	@Deprecated(forRemoval = true, since = "2026-09")
 	int TYPE_DISABLED = CommandImageManager.TYPE_DISABLED;
 
 	/**
 	 * The type of image to display if the mouse is hovering over the command and
 	 * the command is enabled.
+	 *
+	 * @deprecated hover icons are not supported anymore
 	 */
+	@Deprecated(forRemoval = true, since = "2026-09")
 	int TYPE_HOVER = CommandImageManager.TYPE_HOVER;
 
 	/**

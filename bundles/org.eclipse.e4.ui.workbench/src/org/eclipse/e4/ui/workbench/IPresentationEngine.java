@@ -178,13 +178,17 @@ public interface IPresentationEngine {
 	String SPLIT_VERTICAL = "Split Vertical"; //$NON-NLS-1$
 
 	/**
-	 * This key should be used to add an optional String to an element that is a URI to the elements
-	 * disabled icon. This is used, for example, by Toolbar Items which, in Eclipse SDK, provide a
-	 * unique icon for disabled tool items that look better than the OS default graying on the
-	 * default icon.
+	 * This key should be used to add an optional String to an element that is a URI
+	 * to the elements disabled icon. This is used, for example, by Toolbar Items
+	 * which, in Eclipse SDK, provide a unique icon for disabled tool items that
+	 * look better than the OS default graying on the default icon.
 	 *
-	 * There is a strong argument to be made that this disabledIconURI actually be part of the model
+	 * There is a strong argument to be made that this disabledIconURI actually be
+	 * part of the model
+	 *
+	 * @deprecated disabled icons are generated on the fly
 	 */
+	@Deprecated(forRemoval = true, since = "2026-09")
 	String DISABLED_ICON_IMAGE_KEY = "e4_disabled_icon_image_key"; //$NON-NLS-1$
 
 	/**

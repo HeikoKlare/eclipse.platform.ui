@@ -46,6 +46,7 @@ import org.eclipse.e4.ui.model.application.ui.menu.impl.MenuFactoryImpl;
 import org.eclipse.e4.ui.services.help.EHelpService;
 import org.eclipse.e4.ui.workbench.IWorkbench;
 import org.eclipse.e4.ui.workbench.renderers.swt.MenuManagerRenderer;
+import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.activities.IActivityManager;
 import org.eclipse.ui.activities.IIdentifier;
@@ -470,6 +471,7 @@ public class MenuAdditionCacheEntry {
 		return element;
 	}
 
+	@SuppressWarnings("removal")
 	private MToolBarElement createToolBarCommandAddition(final IConfigurationElement commandAddition) {
 		MHandledToolItem item = MenuFactoryImpl.eINSTANCE.createHandledToolItem();
 		item.getPersistedState().put(IWorkbench.PERSIST_STATE, Boolean.FALSE.toString());
@@ -514,7 +516,7 @@ public class MenuAdditionCacheEntry {
 		}
 
 		iconUrl = MenuHelper.getIconURI(commandAddition, IWorkbenchRegistryConstants.ATT_DISABLEDICON);
-		if (iconUrl == null) {
+		if (iconUrl == null && ActionContributionItem.getUseDisabledIcons()) {
 			ICommandImageService commandImageService = application.getContext().get(ICommandImageService.class);
 			if (commandImageService != null) {
 				ImageDescriptor descriptor = commandImageService.getImageDescriptor(commandId,
@@ -528,7 +530,7 @@ public class MenuAdditionCacheEntry {
 				}
 			}
 		}
-		if (iconUrl != null) {
+		if (iconUrl != null && ActionContributionItem.getUseDisabledIcons()) {
 			MenuHelper.setDisabledIconURI(item, iconUrl);
 		}
 

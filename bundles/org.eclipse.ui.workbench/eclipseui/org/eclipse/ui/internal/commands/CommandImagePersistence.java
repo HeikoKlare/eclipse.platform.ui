@@ -29,6 +29,7 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.e4.ui.internal.workbench.E4Workbench;
 import org.eclipse.e4.ui.model.application.MApplication;
 import org.eclipse.e4.ui.model.application.commands.MCommand;
+import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ResourceLocator;
 import org.eclipse.ui.IWorkbenchCommandConstants;
@@ -78,6 +79,7 @@ public final class CommandImagePersistence extends RegistryPersistence {
 	 * @param commandService            The command service for the workbench; must
 	 *                                  not be <code>null</code>.
 	 */
+	@SuppressWarnings("removal")
 	private static void readImagesFromRegistry(final IConfigurationElement[] configurationElements,
 			final int configurationElementCount, final CommandImageManager commandImageManager,
 			final ICommandService commandService) {
@@ -114,11 +116,11 @@ public final class CommandImagePersistence extends RegistryPersistence {
 			String namespaceId = configurationElement.getNamespaceIdentifier();
 			ResourceLocator.imageDescriptorFromBundle(namespaceId, icon)
 					.ifPresent(d -> commandImageManager.bind(commandId, CommandImageManager.TYPE_DEFAULT, style, d));
-			if (disabledIcon != null) {
+			if (disabledIcon != null && ActionContributionItem.getUseDisabledIcons()) {
 				ResourceLocator.imageDescriptorFromBundle(namespaceId, disabledIcon).ifPresent(
 						d -> commandImageManager.bind(commandId, CommandImageManager.TYPE_DISABLED, style, d));
 			}
-			if (hoverIcon != null) {
+			if (hoverIcon != null && ActionContributionItem.getUseDisabledIcons()) {
 				ResourceLocator.imageDescriptorFromBundle(namespaceId, hoverIcon)
 						.ifPresent(d -> commandImageManager.bind(commandId, CommandImageManager.TYPE_HOVER, style, d));
 			}
@@ -197,6 +199,7 @@ public final class CommandImagePersistence extends RegistryPersistence {
 	/**
 	 * Reads all of the command images from the registry.
 	 */
+	@SuppressWarnings("removal")
 	@Override
 	protected void read() {
 		super.read();
@@ -240,10 +243,12 @@ public final class CommandImagePersistence extends RegistryPersistence {
 					if (icon != null) {
 						commandImageManager.bind(IWorkbenchCommandConstants.HELP_ABOUT,
 								CommandImageManager.TYPE_DEFAULT, null, icon);
-						commandImageManager.bind(IWorkbenchCommandConstants.HELP_ABOUT,
-								CommandImageManager.TYPE_DISABLED, null, icon);
-						commandImageManager.bind(IWorkbenchCommandConstants.HELP_ABOUT, CommandImageManager.TYPE_HOVER,
-								null, icon);
+						if (ActionContributionItem.getUseDisabledIcons()) {
+							commandImageManager.bind(IWorkbenchCommandConstants.HELP_ABOUT,
+									CommandImageManager.TYPE_DISABLED, null, icon);
+							commandImageManager.bind(IWorkbenchCommandConstants.HELP_ABOUT,
+									CommandImageManager.TYPE_HOVER, null, icon);
+						}
 					}
 
 				}

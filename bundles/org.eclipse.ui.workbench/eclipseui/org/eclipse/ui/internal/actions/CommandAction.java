@@ -16,12 +16,12 @@
 package org.eclipse.ui.internal.actions;
 
 import java.util.Map;
-
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.ICommandListener;
 import org.eclipse.core.commands.ParameterizedCommand;
 import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.ui.commands.ICommandImageService;
 import org.eclipse.ui.commands.ICommandService;
@@ -151,6 +151,7 @@ public class CommandAction extends Action {
 		runWithEvent(null);
 	}
 
+	@SuppressWarnings("removal")
 	protected void init(IServiceLocator serviceLocator, String commandIdIn, Map parameterMap) {
 		if (handlerService != null) {
 			// already initialized
@@ -173,10 +174,12 @@ public class CommandAction extends Action {
 			parameterizedCommand.getCommand().setEnabled(handlerService.getCurrentState());
 			setEnabled(parameterizedCommand.getCommand().isEnabled());
 			setImageDescriptor(commandImageService.getImageDescriptor(commandIdIn, ICommandImageService.TYPE_DEFAULT));
-			setDisabledImageDescriptor(
-					commandImageService.getImageDescriptor(commandIdIn, ICommandImageService.TYPE_DISABLED));
-			setHoverImageDescriptor(
-					commandImageService.getImageDescriptor(commandIdIn, ICommandImageService.TYPE_HOVER));
+			if (ActionContributionItem.getUseDisabledIcons()) {
+				setDisabledImageDescriptor(
+						commandImageService.getImageDescriptor(commandIdIn, ICommandImageService.TYPE_DISABLED));
+				setHoverImageDescriptor(
+						commandImageService.getImageDescriptor(commandIdIn, ICommandImageService.TYPE_HOVER));
+			}
 		}
 	}
 

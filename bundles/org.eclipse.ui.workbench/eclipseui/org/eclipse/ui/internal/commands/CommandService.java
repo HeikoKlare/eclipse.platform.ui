@@ -37,6 +37,7 @@ import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.ui.internal.workbench.renderers.swt.IUpdateService;
 import org.eclipse.e4.ui.model.application.ui.menu.MItem;
 import org.eclipse.e4.ui.workbench.IPresentationEngine;
+import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.commands.PersistentState;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.IWorkbench;
@@ -355,10 +356,13 @@ public final class CommandService implements ICommandService, IUpdateService {
 				item.setIconURI(MenuHelper.getIconURI(desc, context));
 			}
 
+			@SuppressWarnings("removal")
 			@Override
 			public void setDisabledIcon(ImageDescriptor desc) {
-				item.getTransientData().put(IPresentationEngine.DISABLED_ICON_IMAGE_KEY,
-						MenuHelper.getIconURI(desc, context));
+				if (ActionContributionItem.getUseDisabledIcons()) {
+					item.getTransientData().put(IPresentationEngine.DISABLED_ICON_IMAGE_KEY,
+							MenuHelper.getIconURI(desc, context));
+				}
 			}
 
 			@Override

@@ -88,7 +88,7 @@ Commands placed in menus using the &lt;a href=&quot;org_eclipse_ui_menus.html&qu
                   The icon to display when the command is disabled.
                </documentation>
                <appInfo>
-                  <meta.attribute kind="resource"/>
+                  <meta.attribute kind="resource" deprecated="true"/>
                </appInfo>
             </annotation>
          </attribute>
@@ -98,7 +98,7 @@ Commands placed in menus using the &lt;a href=&quot;org_eclipse_ui_menus.html&qu
                   The icon to display when the user is hovering over the command.
                </documentation>
                <appInfo>
-                  <meta.attribute kind="resource"/>
+                  <meta.attribute kind="resource" deprecated="true"/>
                </appInfo>
             </annotation>
          </attribute>

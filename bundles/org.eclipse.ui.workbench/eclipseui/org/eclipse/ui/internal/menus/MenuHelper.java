@@ -51,6 +51,7 @@ import org.eclipse.e4.ui.model.application.ui.menu.MToolItem;
 import org.eclipse.e4.ui.model.application.ui.menu.impl.MenuFactoryImpl;
 import org.eclipse.e4.ui.workbench.IPresentationEngine;
 import org.eclipse.e4.ui.workbench.IWorkbench;
+import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.commands.ICommandImageService;
@@ -303,6 +304,7 @@ public class MenuHelper {
 		return subMenu;
 	}
 
+	@SuppressWarnings("removal")
 	public static MHandledToolItem createToolItem(MApplication application, CommandContributionItem cci) {
 		MCommand command = getMCommand(application, cci);
 		if (command != null) {
@@ -344,7 +346,7 @@ public class MenuHelper {
 						ICommandImageService.TYPE_DISABLED);
 			}
 
-			if (disabledIconURI != null) {
+			if (disabledIconURI != null && ActionContributionItem.getUseDisabledIcons()) {
 				setDisabledIconURI(toolItem, disabledIconURI);
 			}
 
@@ -448,7 +450,10 @@ public class MenuHelper {
 		return getIconURI(descriptor, workbench);
 	}
 
+	@SuppressWarnings("removal")
 	public static void setDisabledIconURI(MToolItem item, String disabledIconURI) {
-		item.getTransientData().put(IPresentationEngine.DISABLED_ICON_IMAGE_KEY, disabledIconURI);
+		if (ActionContributionItem.getUseDisabledIcons()) {
+			item.getTransientData().put(IPresentationEngine.DISABLED_ICON_IMAGE_KEY, disabledIconURI);
+		}
 	}
 }

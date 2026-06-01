@@ -51,13 +51,19 @@ public final class CommandImageManager extends EventManager {
 
 	/**
 	 * The type of image to display if the corresponding command is disabled.
+	 *
+	 * @deprecated disabled icons are generated on the fly
 	 */
+	@Deprecated(forRemoval = true, since = "2026-09")
 	public static final int TYPE_DISABLED = 1;
 
 	/**
 	 * The type of image to display if the mouse is hovering over the command and
 	 * the command is enabled.
+	 *
+	 * @deprecated hover icons are not supported anymore
 	 */
+	@Deprecated(forRemoval = true, since = "2026-09")
 	public static final int TYPE_HOVER = 2;
 
 	/**

@@ -27,6 +27,7 @@ import org.eclipse.core.commands.ParameterizedCommand;
 import org.eclipse.core.commands.State;
 import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.jface.action.AbstractAction;
+import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuCreator;
 import org.eclipse.jface.bindings.TriggerSequence;
@@ -210,8 +211,12 @@ public final class CommandLegacyActionWrapper extends AbstractAction {
 		}
 	}
 
+	@SuppressWarnings("removal")
 	@Override
 	public ImageDescriptor getDisabledImageDescriptor() {
+		if (!ActionContributionItem.getUseDisabledIcons()) {
+			return null;
+		}
 		final String commandId = getActionDefinitionId();
 		final ICommandImageService commandImageService = serviceLocator.getService(ICommandImageService.class);
 		return commandImageService.getImageDescriptor(commandId, CommandImageManager.TYPE_DISABLED, style);
@@ -223,8 +228,12 @@ public final class CommandLegacyActionWrapper extends AbstractAction {
 		return null;
 	}
 
+	@SuppressWarnings("removal")
 	@Override
 	public ImageDescriptor getHoverImageDescriptor() {
+		if (!ActionContributionItem.getUseDisabledIcons()) {
+			return null;
+		}
 		final String commandId = getActionDefinitionId();
 		final ICommandImageService commandImageService = serviceLocator.getService(ICommandImageService.class);
 		return commandImageService.getImageDescriptor(commandId, CommandImageManager.TYPE_HOVER, style);
@@ -441,8 +450,12 @@ public final class CommandLegacyActionWrapper extends AbstractAction {
 		}
 	}
 
+	@SuppressWarnings("removal")
 	@Override
 	public void setDisabledImageDescriptor(final ImageDescriptor newImage) {
+		if (!ActionContributionItem.getUseDisabledIcons()) {
+			return;
+		}
 		final String commandId = getActionDefinitionId();
 		final int type = CommandImageManager.TYPE_DISABLED;
 		final ICommandImageService commandImageService = serviceLocator.getService(ICommandImageService.class);
@@ -467,8 +480,12 @@ public final class CommandLegacyActionWrapper extends AbstractAction {
 
 	}
 
+	@SuppressWarnings("removal")
 	@Override
 	public void setHoverImageDescriptor(final ImageDescriptor newImage) {
+		if (!ActionContributionItem.getUseDisabledIcons()) {
+			return;
+		}
 		final String commandId = getActionDefinitionId();
 		final int type = CommandImageManager.TYPE_HOVER;
 		final ICommandImageService commandImageService = serviceLocator.getService(ICommandImageService.class);

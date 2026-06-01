@@ -100,6 +100,7 @@ import org.eclipse.text.undo.DocumentUndoManagerRegistry;
 import org.eclipse.text.undo.IDocumentUndoManager;
 
 import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.GroupMarker;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuListener;
@@ -6393,6 +6394,7 @@ public abstract class AbstractTextEditor extends EditorPart
 		setActionActivationCode(ITextEditorActionConstants.SHIFT_LEFT, '\t', -1, SWT.SHIFT);
 	}
 
+	@SuppressWarnings("removal")
 	private void updateImages(IAction action, String commandId) {
 		if (action.getImageDescriptor() != null) {
 			return;
@@ -6402,8 +6404,11 @@ public abstract class AbstractTextEditor extends EditorPart
 			return;
 		}
 		action.setImageDescriptor(imgService.getImageDescriptor(commandId));
-		action.setDisabledImageDescriptor(imgService.getImageDescriptor(commandId, ICommandImageService.TYPE_DISABLED));
-		action.setHoverImageDescriptor(imgService.getImageDescriptor(commandId, ICommandImageService.TYPE_HOVER));
+		if (ActionContributionItem.getUseDisabledIcons()) {
+			action.setDisabledImageDescriptor(
+					imgService.getImageDescriptor(commandId, ICommandImageService.TYPE_DISABLED));
+			action.setHoverImageDescriptor(imgService.getImageDescriptor(commandId, ICommandImageService.TYPE_HOVER));
+		}
 	}
 
 	/**

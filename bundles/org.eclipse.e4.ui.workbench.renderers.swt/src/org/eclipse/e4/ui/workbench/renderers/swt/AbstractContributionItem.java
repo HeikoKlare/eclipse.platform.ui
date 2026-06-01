@@ -211,6 +211,7 @@ public abstract class AbstractContributionItem extends ContributionItem {
 		}
 	}
 
+	@SuppressWarnings("removal")
 	private String getDisabledIconURI(MItem toolItem) {
 		if (!ActionContributionItem.getUseDisabledIcons()) {
 			return ""; //$NON-NLS-1$

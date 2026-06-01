@@ -73,14 +73,20 @@ public abstract class UIElement {
 	 * Update the disabled icon on this UI element.
 	 *
 	 * @param desc The descriptor for the new icon to display.
+	 *
+	 * @deprecated disabled icons are generated on the fly
 	 */
+	@Deprecated(forRemoval = true, since = "2026-09")
 	public abstract void setDisabledIcon(ImageDescriptor desc);
 
 	/**
 	 * Update the hover icon on this UI element.
 	 *
 	 * @param desc The descriptor for the new icon to display.
+	 *
+	 * @deprecated hover icons are not used anymore
 	 */
+	@Deprecated(forRemoval = true, since = "2026-09")
 	public abstract void setHoverIcon(ImageDescriptor desc);
 
 	/**

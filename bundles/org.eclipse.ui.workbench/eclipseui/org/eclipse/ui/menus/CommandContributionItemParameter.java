@@ -60,12 +60,18 @@ public class CommandContributionItemParameter {
 
 	/**
 	 * A disabled icon for this item. May be <code>null</code>.
+	 *
+	 * @deprecated disabled icons are generated on the fly
 	 */
+	@Deprecated(forRemoval = true, since = "2026-09")
 	public ImageDescriptor disabledIcon;
 
 	/**
 	 * A hover icon for this item. May be <code>null</code>.
+	 *
+	 * @deprecated hover icons are not supported anymore
 	 */
+	@Deprecated(forRemoval = true, since = "2026-09")
 	public ImageDescriptor hoverIcon;
 
 	/**

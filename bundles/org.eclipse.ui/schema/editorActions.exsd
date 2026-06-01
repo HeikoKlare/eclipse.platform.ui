@@ -194,7 +194,7 @@ If omitted and the action appears in the toolbar, the Workbench will use a place
                   a relative path of an icon used to visually represent the action in its context when the action is disabled. If omitted, the normal icon will simply appear greyed out. The path is relative to the location of the plugin.xml file of the contributing plug-in. The disabled icon will appear in toolbars but not in menus. Icons for disabled actions in menus will be supplied by the OS.
                </documentation>
                <appInfo>
-                  <meta.attribute kind="resource"/>
+                  <meta.attribute kind="resource" deprecated="true"/>
                </appInfo>
             </annotation>
          </attribute>
@@ -204,7 +204,7 @@ If omitted and the action appears in the toolbar, the Workbench will use a place
                   a relative path of an icon used to visually represent the action in its context when the mouse pointer is over the action. If omitted, the normal icon will be used. The path is relative to the location of the plugin.xml file of the contributing plug-in.
                </documentation>
                <appInfo>
-                  <meta.attribute kind="resource"/>
+                  <meta.attribute kind="resource" deprecated="true"/>
                </appInfo>
             </annotation>
          </attribute>
@@ -485,31 +485,6 @@ In the example above, the specified action will appear as a menu item in the sub
 
    <annotation>
       <appInfo>
-         <meta.section type="implementation"/>
-      </appInfo>
-      <documentation>
-         The Workbench provides a built-in &quot;Default Text Editor&quot;. Plug-ins can contribute into this default editor or editors provided by other plug-ins.
-      </documentation>
-   </annotation>
-
-   <annotation>
-      <appInfo>
-         <meta.section type="copyright"/>
-      </appInfo>
-      <documentation>
-         Copyright (c) 2000, 2019 IBM Corporation and others.&lt;br&gt;
-
-This program and the accompanying materials are made
-available under the terms of the Eclipse Public License 2.0 which accompanies
-this distribution, and is available at &lt;a 
-href=&quot;https://www.eclipse.org/legal/epl-2.0&quot;&gt;https://www.eclipse.org/legal/epl-v20.html&lt;/a&gt;/
-
-SPDX-License-Identifier: EPL-2.0
-      </documentation>
-   </annotation>
-
-   <annotation>
-      <appInfo>
          <meta.section type="apiInfo"/>
       </appInfo>
       <documentation>
@@ -578,6 +553,31 @@ can be expressed using:
   &lt;/and&gt;
  &lt;/enablement&gt;
 &lt;/pre&gt;
+      </documentation>
+   </annotation>
+
+   <annotation>
+      <appInfo>
+         <meta.section type="implementation"/>
+      </appInfo>
+      <documentation>
+         The Workbench provides a built-in &quot;Default Text Editor&quot;. Plug-ins can contribute into this default editor or editors provided by other plug-ins.
+      </documentation>
+   </annotation>
+
+   <annotation>
+      <appInfo>
+         <meta.section type="copyright"/>
+      </appInfo>
+      <documentation>
+         Copyright (c) 2000, 2019 IBM Corporation and others.&lt;br&gt;
+
+This program and the accompanying materials are made
+available under the terms of the Eclipse Public License 2.0 which accompanies
+this distribution, and is available at &lt;a 
+href=&quot;https://www.eclipse.org/legal/epl-2.0&quot;&gt;https://www.eclipse.org/legal/epl-v20.html&lt;/a&gt;/
+
+SPDX-License-Identifier: EPL-2.0
       </documentation>
    </annotation>
 

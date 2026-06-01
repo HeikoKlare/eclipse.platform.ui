@@ -217,11 +217,11 @@ public class ActionDescriptor implements IPluginContribution {
 		if (icon != null) {
 			ResourceLocator.imageDescriptorFromBundle(extendingPluginId, icon).ifPresent(action::setImageDescriptor);
 		}
-		if (hoverIcon != null) {
+		if (hoverIcon != null && ActionContributionItem.getUseDisabledIcons()) {
 			ResourceLocator.imageDescriptorFromBundle(extendingPluginId, hoverIcon)
 					.ifPresent(action::setHoverImageDescriptor);
 		}
-		if (disabledIcon != null) {
+		if (disabledIcon != null && ActionContributionItem.getUseDisabledIcons()) {
 			ResourceLocator.imageDescriptorFromBundle(extendingPluginId, disabledIcon)
 					.ifPresent(action::setDisabledImageDescriptor);
 		}

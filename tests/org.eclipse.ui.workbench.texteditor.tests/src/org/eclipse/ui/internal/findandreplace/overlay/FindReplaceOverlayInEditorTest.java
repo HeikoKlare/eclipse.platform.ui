@@ -32,6 +32,8 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.ToolBar;
+import org.eclipse.swt.widgets.ToolItem;
 
 import org.eclipse.jface.bindings.TriggerSequence;
 import org.eclipse.jface.bindings.keys.KeySequence;
@@ -44,6 +46,7 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.IHandlerService;
+import org.eclipse.ui.internal.findandreplace.WidgetExtractor;
 import org.eclipse.ui.intro.IIntroManager;
 import org.eclipse.ui.intro.IIntroPart;
 import org.eclipse.ui.keys.IBindingService;
@@ -319,6 +322,76 @@ public class FindReplaceOverlayInEditorTest {
 
 		assertEquals(CONTENT.length(), editorSelectionLength(),
 				"Select All must apply to the document again once the editor has focus"); //$NON-NLS-1$
+	}
+
+	/**
+	 * The overlay's own shortcuts belong to the overlay as a whole: they have to work
+	 * from a focused tool bar button just as they do from an input field.
+	 */
+	@Test
+	public void testTheOverlaysShortcutsWorkWhileAToolBarButtonHasFocus() {
+		Control toolBarButton = focusToolBarButton("searchForward"); //$NON-NLS-1$
+
+		type(toolBarButton, SWT.NONE, SWT.ESC);
+
+		assertFalse(searchField.isVisible(), "Escape on a tool bar button must close the overlay"); //$NON-NLS-1$
+	}
+
+	/**
+	 * Enter finds and replaces only where there is something to type. On a focused
+	 * tool bar button it belongs to the button, so the scopes binding it must not be
+	 * up there although the overlay's own are.
+	 */
+	@Test
+	public void testEnterOnAToolBarButtonDoesNotFind() {
+		focusSearchField();
+		searchField.setText("word"); //$NON-NLS-1$
+		processPendingEvents();
+		int matchBefore = editorSelectionOffset();
+
+		Control toolBarButton = focusToolBarButton("caseSensitiveSearch"); //$NON-NLS-1$
+		type(toolBarButton, SWT.NONE, SWT.CR);
+
+		assertEquals(matchBefore, editorSelectionOffset(),
+				"Enter must stay with the focused button instead of moving on to the next match"); //$NON-NLS-1$
+	}
+
+	/**
+	 * Ctrl+F is the overlay's own while it has focus, so that it cannot reopen a
+	 * duplicate of it, and it means the two things opening and closing mean: from an
+	 * input field it gets rid of the overlay, from anywhere else it brings the user
+	 * to the search field.
+	 */
+	@Test
+	public void testFindAndReplaceCommandFocusesTheSearchFieldAndClosesFromThere() {
+		Control toolBarButton = focusToolBarButton("searchForward"); //$NON-NLS-1$
+
+		type(toolBarButton, SWT.MOD1, 'f');
+
+		assertTrue(searchField.isVisible(), "Ctrl+F on a tool bar button must not close the overlay"); //$NON-NLS-1$
+		waitForFocus(searchField::isFocusControl, testName);
+
+		type(searchField, SWT.MOD1, 'f');
+
+		assertFalse(searchField.isVisible(), "Ctrl+F in the search field must close the overlay"); //$NON-NLS-1$
+	}
+
+	/**
+	 * The tool bar whose button carries the given id, once it has focus. Each of the
+	 * overlay's buttons sits in a tool bar of its own, which is the control the focus
+	 * actually goes to, since a {@code ToolItem} is no control.
+	 */
+	private Control focusToolBarButton(String id) {
+		// Searching from the composite the overlay is placed in rather than from the
+		// overlay itself, which this test never gets hold of: it opens the overlay
+		// through the editor's action, like a user does.
+		ToolItem toolItem = new WidgetExtractor(FindReplaceOverlay.ID_DATA_KEY, editorWidget().getParent())
+				.findToolItem(id);
+		assertNotNull(toolItem, "precondition: the overlay has a '" + id + "' button"); //$NON-NLS-1$ //$NON-NLS-2$
+		ToolBar toolBar = toolItem.getParent();
+		toolBar.forceFocus();
+		waitForFocus(toolBar::isFocusControl, testName);
+		return toolBar;
 	}
 
 	private void focusSearchField() {

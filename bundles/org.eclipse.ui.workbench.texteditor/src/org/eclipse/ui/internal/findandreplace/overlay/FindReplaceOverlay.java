@@ -32,6 +32,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.ScrollBar;
 import org.eclipse.swt.widgets.Scrollable;
@@ -111,21 +112,22 @@ public class FindReplaceOverlay {
 
 	private final FindReplaceOverlayCommandSupport commandSupport;
 
-	private final FocusListener targetActionActivationHandling = new FocusListener() {
-		@Override
-		public void focusGained(FocusEvent e) {
-			if (e.widget == searchBar.getTextBar()) {
-				commandSupport.searchBarActivated();
-			} else if (e.widget == replaceBar.getTextBar()) {
-				commandSupport.replaceBarActivated();
-			}
-		}
-
-		@Override
-		public void focusLost(FocusEvent e) {
-			commandSupport.searchOrReplaceBarDeactivated();
-		}
-	};
+	/**
+	 * Keeps the overlay's contexts in step with where the focus is. It is installed
+	 * on every control of the overlay rather than on the input fields alone, because
+	 * the overlay's own shortcuts have to work from its tool bars as well, and they
+	 * only do so while the overlay's context is the active leaf.
+	 * <p>
+	 * Losing the focus is answered asynchronously because SWT reports the departure
+	 * from the old control before the arrival at the new one. Acting on the
+	 * departure right away would give the active leaf back to the editor and take it
+	 * again on every move of the focus within the overlay, which is not only
+	 * needless churn: the hand-back may only happen when the focus really left the
+	 * overlay, as {@code FindReplaceOverlayContextSupport#handBackActiveLeaf}
+	 * describes. Which control ends up with the focus is therefore looked up once
+	 * the focus change has come to rest.
+	 */
+	private final Listener overlayFocusTracking = this::handleOverlayFocusEvent;
 
 	private final CustomFocusOrder customFocusOrder = new CustomFocusOrder();
 
@@ -197,6 +199,59 @@ public class FindReplaceOverlay {
 			searchBar.getDropDownTool().getFirstControl().addListener(SWT.Traverse, searchToolsToReplaceBar);
 			closeTools.getFirstControl().addListener(SWT.Traverse, closeToolsToReplaceTools);
 			replaceBar.getDropDownTool().getFirstControl().addListener(SWT.Traverse, replaceToolsToCloseTools);
+		}
+	}
+
+	private void handleOverlayFocusEvent(Event event) {
+		if (event.type == SWT.FocusIn) {
+			if (event.widget == searchBar.getTextBar()) {
+				commandSupport.searchBarFocused();
+			} else if (event.widget == replaceBar.getTextBar()) {
+				commandSupport.replaceBarFocused();
+			} else {
+				commandSupport.otherOverlayControlFocused();
+			}
+		} else {
+			asyncExecIfOpen(() -> {
+				if (!isFocusInOverlay()) {
+					commandSupport.overlayLostFocus();
+				}
+			});
+		}
+	}
+
+	private boolean isInputFieldFocused() {
+		Control focusControl = containerControl.getDisplay().getFocusControl();
+		return focusControl == searchBar.getTextBar() || focusControl == replaceBar.getTextBar();
+	}
+
+	private boolean isFocusInOverlay() {
+		Control focusControl = containerControl.getDisplay().getFocusControl();
+		while (focusControl != null) {
+			if (focusControl == containerControl) {
+				return true;
+			}
+			focusControl = focusControl.getParent();
+		}
+		return false;
+	}
+
+	/**
+	 * Tracks the focus on the whole widget tree given, so that a control added to the
+	 * overlay later has to be passed here as well, just like the exclusion from CSS
+	 * styling.
+	 * <p>
+	 * The listener is registered untyped, because {@link HistoryTextWrapper}
+	 * redirects {@code addFocusListener} to the text bar it wraps, which would both
+	 * skip the wrapper's other children and register twice for the text bar itself.
+	 */
+	private void trackFocusChanges(Control control) {
+		control.addListener(SWT.FocusIn, overlayFocusTracking);
+		control.addListener(SWT.FocusOut, overlayFocusTracking);
+		if (control instanceof Composite composite) {
+			for (Control child : composite.getChildren()) {
+				trackFocusChanges(child);
+			}
 		}
 	}
 
@@ -358,6 +413,7 @@ public class FindReplaceOverlay {
 		retrieveColors();
 		createMainContainer(parent);
 		disableCssStyling(containerControl);
+		trackFocusChanges(containerControl);
 		containerControl.layout();
 	}
 
@@ -545,9 +601,15 @@ public class FindReplaceOverlay {
 		FindReplaceOverlayAction closeAction = new FindReplaceOverlayAction(this::close,
 				FindReplaceOverlayCommandSupport.CMD_CLOSE);
 		commandSupport.registerAction(closeAction);
-		// Also close on Ctrl+F: otherwise it would reopen (a duplicate of) this very overlay.
-		commandSupport.registerAction(
-				new FindReplaceOverlayAction(this::close, IWorkbenchCommandConstants.EDIT_FIND_AND_REPLACE));
+		// Ctrl+F is adopted while the overlay has the focus, because opening again would
+		// reopen (a duplicate of) this very overlay. From an input field it closes the
+		// overlay, so that pressing Ctrl+F once more is a way of getting rid of it. From
+		// any other control it does what opening does, namely put the focus into the
+		// search field with its content selected, which from there is what the user asks
+		// for and what the editor's own action would have done before the overlay took
+		// the command over.
+		commandSupport.registerAction(new FindReplaceOverlayAction(this::closeOrFocusSearchBar,
+				IWorkbenchCommandConstants.EDIT_FIND_AND_REPLACE));
 		commandSupport.registerAction(new FindReplaceOverlayAction(this::triggerContentAssist,
 				ITextEditorActionDefinitionIds.CONTENT_ASSIST_PROPOSALS));
 
@@ -682,7 +744,6 @@ public class FindReplaceOverlay {
 				resetErrorColoring();
 			}
 		});
-		searchBar.addFocusListener(targetActionActivationHandling);
 		searchBar.setTabList(null);
 		contentAssistSearchField = createContentAssistField(searchBar, true);
 	}
@@ -706,7 +767,6 @@ public class FindReplaceOverlay {
 			findReplaceLogic.setReplaceString(replaceBar.getText());
 			resetErrorColoring();
 		});
-		replaceBar.addFocusListener(targetActionActivationHandling);
 		replaceBar.addFocusListener(FocusListener.focusLostAdapter(e -> resetErrorColoring()));
 		contentAssistReplaceField = createContentAssistField(replaceBar, false);
 	}
@@ -1006,6 +1066,15 @@ public class FindReplaceOverlay {
 
 	private void updateContentAssistAvailability() {
 		setContentAssistsEnablement(findReplaceLogic.isAvailableAndActive(SearchOptions.REGEX));
+	}
+
+	private void closeOrFocusSearchBar() {
+		if (isInputFieldFocused()) {
+			close();
+		} else {
+			searchBar.forceFocus();
+			searchBar.selectAll();
+		}
 	}
 
 	private void triggerContentAssist() {

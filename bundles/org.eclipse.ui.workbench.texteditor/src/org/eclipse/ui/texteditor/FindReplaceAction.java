@@ -69,7 +69,7 @@ public class FindReplaceAction extends ResourceAction implements IUpdate {
 	private boolean shouldUseOverlay() {
 		IPreferencesService preferences = Platform.getPreferencesService();
 		boolean overlayPreference = preferences.getBoolean(INSTANCE_SCOPE_NODE_NAME, USE_FIND_REPLACE_OVERLAY, true, null);
-		return overlayPreference && fWorkbenchPart instanceof StatusTextEditor;
+		return overlayPreference && FindReplaceOverlay.canOpenInPart(fWorkbenchPart);
 	}
 
 	private static boolean shouldPositionOverlayOnTop() {

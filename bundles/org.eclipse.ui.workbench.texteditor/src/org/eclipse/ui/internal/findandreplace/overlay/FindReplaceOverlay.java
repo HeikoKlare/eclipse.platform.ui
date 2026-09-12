@@ -40,6 +40,8 @@ import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Widget;
 
+import org.eclipse.core.runtime.Assert;
+
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.fieldassist.ControlDecoration;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
@@ -201,6 +203,7 @@ public class FindReplaceOverlay {
 	}
 
 	public FindReplaceOverlay(IWorkbenchPart part, IFindReplaceTarget target) {
+		Assert.isLegal(canOpenInPart(part), "the overlay cannot be opened in the given part"); //$NON-NLS-1$
 		targetPart = part;
 		commandSupport = new FindReplaceOverlayCommandSupport(targetPart);
 		targetControl = getTargetControl(part);
@@ -212,6 +215,22 @@ public class FindReplaceOverlay {
 		containerControl.setVisible(false);
 		PlatformUI.getWorkbench().getHelpSystem().setHelp(containerControl,
 				IAbstractTextEditorHelpContextIds.FIND_REPLACE_OVERLAY);
+	}
+
+	/**
+	 * Tells whether the overlay can be opened in the given part, which is the
+	 * precondition of {@link #FindReplaceOverlay(IWorkbenchPart, IFindReplaceTarget)}.
+	 * <p>
+	 * The overlay places itself on the control showing the part's text, so it
+	 * requires a part that provides an {@link ITextViewer} whose text widget
+	 * exists. Parts that show text through something else, and viewers whose widget
+	 * has not been created or has already been disposed, cannot host the overlay.
+	 *
+	 * @param part the part to open the overlay in, may be {@code null}
+	 * @return whether the overlay can be opened in the given part
+	 */
+	public static boolean canOpenInPart(IWorkbenchPart part) {
+		return getTargetControl(part) != null;
 	}
 
 	private static Composite getTargetControl(IWorkbenchPart targetPart) {

@@ -19,6 +19,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -89,6 +90,22 @@ public class FindReplaceOverlayTest extends FindReplaceUITest<OverlayAccess> {
 		when(part.getAdapter(ITextViewer.class)).thenReturn(viewer);
 		when(part.getAdapter(IFindReplaceTarget.class)).thenReturn(viewer.getFindReplaceTarget());
 		return part;
+	}
+
+	@Test
+	public void testOverlayCanOnlyBeOpenedInPartProvidingATextViewer() {
+		openTextViewer("line");
+
+		assertTrue(FindReplaceOverlay.canOpenInPart(createHostPart(getTextViewer())));
+		assertFalse(FindReplaceOverlay.canOpenInPart(Mockito.mock(IWorkbenchPart.class)));
+		assertFalse(FindReplaceOverlay.canOpenInPart(null));
+	}
+
+	@Test
+	public void testOverlayRejectsPartItCannotBeOpenedIn() {
+		IWorkbenchPart partWithoutTextViewer= Mockito.mock(IWorkbenchPart.class);
+
+		assertThrows(IllegalArgumentException.class, () -> new FindReplaceOverlay(partWithoutTextViewer, null));
 	}
 
 	@Test
